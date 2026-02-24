@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║  EMOTION ARCHITECT  ◆  ULTIMATE EDITION  ◆  v5.0                           ║
+║  EMOTION ARCHITECT  ◆  ULTIMATE EDITION  ◆                                ║
 ║  20 Worlds · 3D Phong Balls · Weather · Combos · Parallax · World Cards    ║
 ║  Pause Menu · Edge Danger · Squish/Stretch · Speed Lines · Coin Magnet     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
