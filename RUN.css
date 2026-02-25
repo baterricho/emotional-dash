@@ -1,0 +1,2648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindTrap Labyrinth</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #030408;
+  --bg-dark: #07090f;
+  --bg-card: #0d1117;
+  --bg-panel: #111520;
+  --border: #1e2a3a;
+  --border-glow: #2a4a7f;
+  --accent-cyan: #00d4ff;
+  --accent-gold: #ffc840;
+  --accent-red: #ff3a5c;
+  --accent-green: #00ff88;
+  --accent-purple: #b44fff;
+  --text-primary: #e8eaf0;
+  --text-secondary: #7a8a9a;
+  --text-dim: #3a4a5a;
+  --glow-cyan: 0 0 20px rgba(0,212,255,0.5);
+  --glow-gold: 0 0 20px rgba(255,200,64,0.5);
+  --glow-red: 0 0 20px rgba(255,58,92,0.5);
+  --glow-green: 0 0 20px rgba(0,255,136,0.5);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ANIMATED BACKGROUND */
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridShift 20s linear infinite;
+}
+@keyframes gridShift { 0%{background-position:0 0} 100%{background-position:40px 40px} }
+
+.bg-particles { position:fixed; inset:0; z-index:0; overflow:hidden; }
+.particle {
+  position:absolute; width:2px; height:2px; border-radius:50%;
+  background: var(--accent-cyan); opacity:0;
+  animation: floatUp var(--dur, 8s) var(--delay, 0s) infinite;
+}
+@keyframes floatUp {
+  0%{opacity:0; transform:translateY(100vh) translateX(0)}
+  10%{opacity:0.6}
+  90%{opacity:0.2}
+  100%{opacity:0; transform:translateY(-100px) translateX(var(--dx,20px))}
+}
+
+/* SCREENS */
+.screen { position:relative; z-index:1; min-height:100vh; display:none; }
+.screen.active { display:flex; }
+
+/* ====== TITLE SCREEN ====== */
+#titleScreen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.title-logo {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.title-logo .logo-icon {
+  font-size: 72px;
+  display: block;
+  filter: drop-shadow(0 0 30px var(--accent-cyan));
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,100%{filter: drop-shadow(0 0 20px var(--accent-cyan))}
+  50%{filter: drop-shadow(0 0 50px var(--accent-cyan)) drop-shadow(0 0 80px rgba(0,212,255,0.3))}
+}
+
+.title-main {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(28px, 6vw, 64px);
+  font-weight: 900;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, var(--accent-cyan) 0%, #fff 40%, var(--accent-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.title-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  color: var(--accent-gold);
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  margin-bottom: 60px;
+  opacity: 0.8;
+}
+
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.btn {
+  padding: 16px 32px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.4s;
+}
+.btn:hover::before { transform: translateX(100%); }
+
+.btn-primary {
+  background: linear-gradient(135deg, #003a6b, #006899);
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  box-shadow: var(--glow-cyan), inset 0 0 20px rgba(0,212,255,0.05);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #004d8f, #0088bb);
+  box-shadow: 0 0 40px rgba(0,212,255,0.6), inset 0 0 30px rgba(0,212,255,0.1);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #2a1a00, #4a3000);
+  color: var(--accent-gold);
+  border: 1px solid var(--accent-gold);
+  box-shadow: var(--glow-gold), inset 0 0 20px rgba(255,200,64,0.05);
+}
+.btn-secondary:hover {
+  box-shadow: 0 0 40px rgba(255,200,64,0.6);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #2a0010, #4a0020);
+  color: var(--accent-red);
+  border: 1px solid var(--accent-red);
+  box-shadow: var(--glow-red);
+}
+.btn-danger:hover {
+  box-shadow: 0 0 40px rgba(255,58,92,0.6);
+  transform: translateY(-2px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+
+.btn-sm { padding: 10px 20px; font-size: 14px; letter-spacing: 2px; }
+.btn-block { width: 100%; }
+
+.divider {
+  display: flex; align-items: center; gap: 16px;
+  color: var(--text-dim); font-size: 12px; letter-spacing: 3px;
+  width: 100%; max-width: 380px; margin: 4px 0;
+}
+.divider::before, .divider::after {
+  content: ''; flex:1; height:1px; background: var(--border);
+}
+
+/* ====== MODE SELECT ====== */
+#modeScreen {
+  flex-direction: column; align-items: center;
+  padding: 60px 20px; gap: 30px;
+}
+
+.mode-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px; width: 100%; max-width: 960px;
+}
+
+.mode-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 32px 28px;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.mode-card::before {
+  content: ''; position: absolute;
+  bottom: 0; left: 0; right: 0; height: 3px;
+  background: var(--card-accent, var(--accent-cyan));
+  transform: scaleX(0); transition: transform 0.3s;
+}
+.mode-card:hover::before { transform: scaleX(1); }
+.mode-card:hover {
+  border-color: var(--card-accent, var(--accent-cyan));
+  box-shadow: 0 0 30px rgba(0,0,0,0.5), 0 4px 40px rgba(0,0,0,0.4);
+  transform: translateY(-4px);
+}
+
+.mode-card.solo { --card-accent: var(--accent-cyan); }
+.mode-card.coop { --card-accent: var(--accent-green); }
+.mode-card.traitor { --card-accent: var(--accent-red); }
+
+.mode-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+.mode-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 20px; font-weight: 700;
+  color: var(--card-accent, var(--accent-cyan));
+  margin-bottom: 8px;
+}
+.mode-desc { font-size: 15px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px; }
+.mode-tag {
+  display: inline-block;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; letter-spacing: 2px;
+  border: 1px solid var(--card-accent);
+  color: var(--card-accent);
+  background: rgba(0,0,0,0.3);
+}
+
+/* ====== SETUP SCREEN ====== */
+#setupScreen {
+  flex-direction: column; align-items: center;
+  padding: 60px 20px; gap: 24px;
+}
+
+.setup-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 32px;
+  width: 100%; max-width: 560px;
+}
+
+.panel-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 20px; color: var(--accent-cyan);
+  margin-bottom: 24px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.form-group { margin-bottom: 20px; }
+.form-label {
+  display: block; font-size: 13px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-secondary); margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%; padding: 12px 16px;
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif; font-size: 16px;
+  transition: border-color 0.2s;
+}
+.form-input:focus { outline: none; border-color: var(--accent-cyan); box-shadow: 0 0 10px rgba(0,212,255,0.2); }
+
+.player-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.player-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 14px;
+}
+.player-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--border-glow); display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: var(--accent-cyan); flex-shrink: 0;
+}
+.player-name-input {
+  flex: 1; background: transparent; border: none;
+  color: var(--text-primary); font-family: 'Rajdhani', sans-serif;
+  font-size: 15px; font-weight: 500;
+}
+.player-name-input:focus { outline: none; }
+.player-name-input::placeholder { color: var(--text-dim); }
+.remove-player {
+  background: none; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 18px; transition: color 0.2s; padding: 4px;
+}
+.remove-player:hover { color: var(--accent-red); }
+
+.difficulty-select {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.diff-btn {
+  padding: 12px; border-radius: 4px; cursor: pointer;
+  text-align: center; border: 1px solid var(--border);
+  background: var(--bg-dark); transition: all 0.2s;
+  font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600;
+  letter-spacing: 1px;
+}
+.diff-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.diff-btn.active { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(0,212,255,0.1); box-shadow: var(--glow-cyan); }
+
+/* ====== GAME SCREEN ====== */
+#gameScreen {
+  flex-direction: column;
+  padding: 0; gap: 0;
+}
+
+.game-header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; z-index: 10; position: relative;
+}
+
+.game-header-left { display: flex; align-items: center; gap: 16px; }
+.game-logo-small {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px; color: var(--accent-cyan); letter-spacing: 2px;
+}
+
+.timer-display {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 28px; font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--accent-gold);
+  text-shadow: var(--glow-gold);
+  min-width: 80px; text-align: center;
+}
+.timer-display.danger { color: var(--accent-red); text-shadow: var(--glow-red); animation: timerDanger 0.5s infinite; }
+@keyframes timerDanger { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.pulse-bar {
+  width: 100%; height: 3px; background: var(--border);
+  position: relative; overflow: hidden;
+}
+.pulse-fill {
+  position: absolute; top:0; left:0; height:100%;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-gold));
+  transition: width 1s linear;
+}
+
+.player-hud {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+
+.player-hud-item {
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: 4px; padding: 6px 12px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600;
+}
+.player-hud-item.active { border-color: var(--accent-cyan); box-shadow: var(--glow-cyan); }
+.player-hud-item.eliminated { opacity: 0.4; }
+.phud-avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  background: var(--border-glow); color: var(--accent-cyan);
+}
+.phud-score { color: var(--accent-gold); }
+
+/* GAME LAYOUT */
+.game-body {
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  grid-template-rows: 1fr;
+  flex: 1; gap: 0; overflow: hidden;
+  min-height: calc(100vh - 120px);
+}
+
+@media(max-width:900px) {
+  .game-body { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+  .sidebar-left, .sidebar-right { display: none; }
+}
+
+/* SIDEBAR */
+.sidebar {
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+  overflow-y: auto; display: flex; flex-direction: column; gap: 20px;
+}
+.sidebar-right { border-right: none; border-left: 1px solid var(--border); }
+
+.sidebar-section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--text-dim);
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+/* LABYRINTH MAP */
+.map-container {
+  padding: 20px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative;
+}
+
+.map-grid {
+  display: grid;
+  gap: 3px;
+  position: relative;
+}
+
+.map-cell {
+  width: 52px; height: 52px;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer;
+  transition: all 0.2s;
+  position: relative; overflow: hidden;
+  border: 1px solid transparent;
+}
+
+.map-cell.wall {
+  background: var(--bg-deep);
+  border-color: var(--border);
+  cursor: default;
+}
+
+.map-cell.room {
+  background: var(--bg-panel);
+  border-color: var(--border);
+  cursor: pointer;
+}
+.map-cell.room:hover {
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.map-cell.room-solved {
+  background: rgba(0,255,136,0.1);
+  border-color: var(--accent-green);
+}
+
+.map-cell.room-locked {
+  background: rgba(255,58,92,0.08);
+  border-color: rgba(255,58,92,0.4);
+}
+
+.map-cell.room-current {
+  background: rgba(0,212,255,0.15);
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+  animation: currentPulse 2s infinite;
+}
+@keyframes currentPulse {
+  0%,100%{box-shadow:0 0 10px rgba(0,212,255,0.4)}
+  50%{box-shadow:0 0 25px rgba(0,212,255,0.8)}
+}
+
+.map-cell.room-core {
+  background: rgba(255,200,64,0.1);
+  border-color: var(--accent-gold);
+  box-shadow: var(--glow-gold);
+}
+
+.cell-player-dot {
+  position:absolute; width:8px; height:8px; border-radius:50%;
+  background: var(--accent-cyan); bottom: 4px; right: 4px;
+  box-shadow: 0 0 6px var(--accent-cyan);
+}
+
+/* ROLE CARD */
+.role-card {
+  background: var(--bg-dark);
+  border: 1px solid var(--border-glow);
+  border-radius: 6px; padding: 16px;
+}
+.role-card-icon { font-size: 32px; margin-bottom: 8px; display: block; }
+.role-card-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px; color: var(--accent-gold); margin-bottom: 6px;
+}
+.role-card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+/* TORCHES */
+.torch-display { display: flex; gap: 8px; flex-wrap: wrap; }
+.torch {
+  width: 32px; height: 32px; border-radius: 4px;
+  background: rgba(255,200,64,0.2);
+  border: 1px solid var(--accent-gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: all 0.3s;
+}
+.torch.spent { background: var(--bg-dark); border-color: var(--border); opacity: 0.3; filter: grayscale(1); }
+
+/* LOG */
+.event-log {
+  display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;
+}
+.log-entry {
+  font-size: 12px; color: var(--text-secondary);
+  padding: 6px 10px; background: var(--bg-dark); border-radius: 3px;
+  border-left: 2px solid var(--border);
+}
+.log-entry.good { border-color: var(--accent-green); color: var(--accent-green); }
+.log-entry.bad { border-color: var(--accent-red); color: var(--accent-red); }
+.log-entry.info { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.log-entry.warn { border-color: var(--accent-gold); color: var(--accent-gold); }
+
+/* ====== PUZZLE MODAL ====== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.active { display: flex; }
+
+.puzzle-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+  padding: 36px;
+  width: 100%; max-width: 600px;
+  position: relative;
+  animation: modalIn 0.3s ease;
+  box-shadow: 0 0 60px rgba(0,0,0,0.8), 0 0 30px rgba(0,212,255,0.1);
+}
+@keyframes modalIn {
+  0%{opacity:0; transform: scale(0.9) translateY(20px)}
+  100%{opacity:1; transform: scale(1) translateY(0)}
+}
+
+.puzzle-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px; gap: 16px;
+}
+
+.puzzle-type-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; background: rgba(0,212,255,0.1);
+  border: 1px solid var(--accent-cyan); color: var(--accent-cyan);
+}
+
+.puzzle-timer-ring {
+  width: 56px; height: 56px; flex-shrink: 0;
+  position: relative;
+}
+.puzzle-timer-ring svg { transform: rotate(-90deg); }
+.ptr-bg { fill: none; stroke: var(--border); stroke-width: 4; }
+.ptr-fill { fill: none; stroke: var(--accent-gold); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 138; transition: stroke-dashoffset 1s linear; }
+.ptr-label {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 15px; font-weight: 700; color: var(--accent-gold);
+}
+
+.puzzle-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 22px; color: var(--text-primary); margin-bottom: 8px;
+}
+.puzzle-desc {
+  font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;
+}
+
+/* PUZZLE TYPES STYLING */
+.puzzle-content { margin-bottom: 24px; }
+
+/* Math puzzle */
+.math-display {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 32px; color: var(--accent-cyan);
+  text-align: center; margin: 20px 0; letter-spacing: 4px;
+  padding: 20px; background: var(--bg-dark); border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* Pattern puzzle */
+.pattern-display {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  justify-content: center; margin: 20px 0;
+}
+.pattern-item {
+  width: 60px; height: 60px; border-radius: 8px;
+  background: var(--bg-dark); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Share Tech Mono', monospace; font-size: 22px;
+  color: var(--accent-cyan);
+}
+.pattern-item.unknown {
+  border-color: var(--accent-gold); color: var(--accent-gold);
+  font-size: 28px;
+}
+
+/* Cipher puzzle */
+.cipher-display {
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px; margin: 20px 0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 20px; letter-spacing: 6px; text-align: center;
+  color: var(--accent-purple);
+}
+.cipher-key {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(60px,1fr));
+  gap: 6px; margin: 12px 0;
+}
+.cipher-pair {
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: 4px; padding: 6px; text-align: center;
+  font-family: 'Share Tech Mono', monospace; font-size: 11px;
+}
+.cipher-from { color: var(--accent-purple); font-size: 14px; font-weight: 700; }
+.cipher-to { color: var(--text-secondary); }
+
+/* Memory puzzle */
+.memory-grid {
+  display: grid; gap: 8px;
+  justify-content: center; margin: 20px 0;
+}
+.memory-cell {
+  width: 70px; height: 70px; border-radius: 6px;
+  background: var(--bg-dark); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; cursor: pointer; transition: all 0.2s;
+  user-select: none;
+}
+.memory-cell.revealed {
+  border-color: var(--accent-cyan);
+  background: rgba(0,212,255,0.1);
+  box-shadow: var(--glow-cyan);
+}
+.memory-cell.correct { border-color: var(--accent-green); background: rgba(0,255,136,0.15); }
+.memory-cell.wrong { border-color: var(--accent-red); background: rgba(255,58,92,0.15); animation: shake 0.3s; }
+.memory-cell.hidden { font-size: 0; }
+.memory-cell.selected { border-color: var(--accent-gold); background: rgba(255,200,64,0.1); }
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)}
+}
+
+/* Logic puzzle */
+.logic-items {
+  display: flex; flex-direction: column; gap: 10px; margin: 16px 0;
+}
+.logic-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; background: var(--bg-dark);
+  border: 1px solid var(--border); border-radius: 6px;
+  cursor: pointer; transition: all 0.2s; user-select: none;
+}
+.logic-item:hover { border-color: var(--accent-cyan); }
+.logic-item.selected { border-color: var(--accent-cyan); background: rgba(0,212,255,0.08); }
+.logic-check {
+  width: 20px; height: 20px; border-radius: 3px;
+  border: 2px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.logic-item.selected .logic-check { border-color: var(--accent-cyan); background: var(--accent-cyan); color: #000; }
+
+/* Riddle puzzle */
+.riddle-text {
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: 8px; padding: 24px; margin: 20px 0;
+  font-size: 18px; font-style: italic; line-height: 1.7;
+  color: var(--text-primary); text-align: center;
+  border-left: 3px solid var(--accent-purple);
+}
+
+/* ANSWER INPUT */
+.answer-area { display: flex; gap: 12px; }
+.answer-input {
+  flex: 1; padding: 14px 18px;
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text-primary);
+  font-family: 'Share Tech Mono', monospace; font-size: 18px;
+  letter-spacing: 2px; transition: border-color 0.2s;
+}
+.answer-input:focus { outline: none; border-color: var(--accent-cyan); box-shadow: 0 0 15px rgba(0,212,255,0.2); }
+.answer-input.correct { border-color: var(--accent-green); box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+.answer-input.wrong { border-color: var(--accent-red); box-shadow: 0 0 20px rgba(255,58,92,0.3); animation: shake 0.3s; }
+
+.btn-submit {
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #003a6b, #006899);
+  border: 1px solid var(--accent-cyan);
+  border-radius: 4px; color: var(--accent-cyan);
+  font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700;
+  letter-spacing: 2px; cursor: pointer; transition: all 0.2s;
+}
+.btn-submit:hover { box-shadow: var(--glow-cyan); transform: translateY(-1px); }
+
+.hint-btn {
+  margin-top: 12px; padding: 8px 16px;
+  background: transparent; border: 1px solid var(--accent-gold);
+  border-radius: 4px; color: var(--accent-gold);
+  font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+  letter-spacing: 1px; cursor: pointer; transition: all 0.2s;
+}
+.hint-btn:hover { background: rgba(255,200,64,0.1); }
+
+.feedback-msg {
+  text-align: center; font-size: 16px; font-weight: 600;
+  padding: 12px; border-radius: 4px; margin-top: 16px;
+  display: none;
+}
+.feedback-msg.show { display: block; }
+.feedback-msg.success { background: rgba(0,255,136,0.1); color: var(--accent-green); border: 1px solid var(--accent-green); }
+.feedback-msg.error { background: rgba(255,58,92,0.1); color: var(--accent-red); border: 1px solid var(--accent-red); }
+
+/* ====== RESULT SCREEN ====== */
+#resultScreen {
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; text-align: center;
+}
+
+.result-icon { font-size: 80px; margin-bottom: 20px; display: block; }
+.result-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(28px, 5vw, 48px); margin-bottom: 10px;
+}
+.result-subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 40px; }
+
+.scoreboard {
+  width: 100%; max-width: 560px; margin-bottom: 32px;
+}
+.scoreboard-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 20px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 4px;
+  margin-bottom: 8px; transition: all 0.3s;
+}
+.scoreboard-row.first { border-color: var(--accent-gold); box-shadow: var(--glow-gold); }
+.scoreboard-row.second { border-color: #aaa; }
+.scoreboard-row.third { border-color: #cd7f32; }
+.score-rank { font-family: 'Share Tech Mono', monospace; font-size: 18px; font-weight: 700; width: 30px; }
+.score-name { flex: 1; font-size: 16px; font-weight: 600; text-align: left; }
+.score-pts { font-family: 'Share Tech Mono', monospace; font-size: 20px; color: var(--accent-gold); }
+.score-badges { display: flex; gap: 6px; }
+.badge {
+  padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 700;
+  background: rgba(0,212,255,0.1); color: var(--accent-cyan);
+  border: 1px solid rgba(0,212,255,0.3);
+}
+
+/* ====== PHANTOM VOTE SCREEN ====== */
+#voteScreen {
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; gap: 24px;
+}
+
+.vote-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 32px; color: var(--accent-red);
+  text-shadow: var(--glow-red); text-align: center;
+}
+.vote-subtitle { color: var(--text-secondary); text-align: center; font-size: 16px; }
+
+.vote-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+  gap: 14px; width: 100%; max-width: 700px;
+}
+.vote-card {
+  background: var(--bg-card); border: 2px solid var(--border);
+  border-radius: 8px; padding: 24px 16px; text-align: center;
+  cursor: pointer; transition: all 0.2s;
+}
+.vote-card:hover { border-color: var(--accent-red); box-shadow: var(--glow-red); transform: translateY(-3px); }
+.vote-card.voted { border-color: var(--accent-red); background: rgba(255,58,92,0.1); }
+.vote-avatar { font-size: 40px; margin-bottom: 10px; display: block; }
+.vote-name { font-size: 15px; font-weight: 700; }
+.vote-count { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+/* ====== NOTIFICATION TOAST ====== */
+.toast-container {
+  position: fixed; top: 80px; right: 20px; z-index: 200;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.toast {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 14px 18px;
+  max-width: 300px; font-size: 14px;
+  animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.toast.success { border-color: var(--accent-green); color: var(--accent-green); }
+.toast.error { border-color: var(--accent-red); color: var(--accent-red); }
+.toast.info { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.toast.warn { border-color: var(--accent-gold); color: var(--accent-gold); }
+@keyframes toastIn { 0%{opacity:0; transform:translateX(100%)} 100%{opacity:1; transform:translateX(0)} }
+@keyframes toastOut { 0%{opacity:1} 100%{opacity:0; transform:translateX(100%)} }
+
+/* DUNGEON PULSE OVERLAY */
+.pulse-overlay {
+  position: fixed; inset: 0; z-index: 50; pointer-events: none;
+  border: 4px solid var(--accent-red);
+  opacity: 0; animation: none;
+}
+.pulse-overlay.active { animation: pulseOverlay 1s ease; }
+@keyframes pulseOverlay { 0%,100%{opacity:0} 50%{opacity:0.6} }
+
+/* SCREEN SHAKE */
+@keyframes screenShake {
+  0%,100%{transform:translate(0,0)}
+  10%{transform:translate(-5px,-3px)}
+  20%{transform:translate(5px,3px)}
+  30%{transform:translate(-3px,5px)}
+  40%{transform:translate(3px,-5px)}
+  50%{transform:translate(-5px,5px)}
+  60%{transform:translate(5px,-3px)}
+  70%{transform:translate(-3px,3px)}
+  80%{transform:translate(3px,-3px)}
+  90%{transform:translate(-3px,-3px)}
+}
+.shake { animation: screenShake 0.4s ease; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-glow); }
+
+/* PAGE TITLE */
+.page-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(20px, 3vw, 32px); color: var(--accent-cyan);
+  text-align: center; letter-spacing: 2px;
+  text-shadow: var(--glow-cyan);
+  margin-bottom: 8px;
+}
+.page-subtitle { text-align: center; color: var(--text-secondary); font-size: 15px; margin-bottom: 32px; }
+
+/* STATS ROW */
+.stats-row {
+  display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+  margin-bottom: 24px;
+}
+.stat-chip {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 8px 18px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600;
+}
+.stat-chip-icon { font-size: 16px; }
+.stat-chip-label { color: var(--text-secondary); }
+.stat-chip-val { color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace; }
+
+/* MINIMAP LEGEND */
+.map-legend {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary);
+}
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+/* COLLAPSE */
+.crumble-overlay {
+  position: absolute; inset: 0; background: rgba(255,58,92,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; border-radius: 4px; z-index: 2;
+}
+
+/* PHANTOM INDICATOR */
+.phantom-badge {
+  position: fixed; bottom: 20px; right: 20px; z-index: 100;
+  background: rgba(255,58,92,0.15); border: 1px solid var(--accent-red);
+  border-radius: 8px; padding: 12px 18px;
+  font-family: 'Cinzel Decorative', serif; font-size: 13px;
+  color: var(--accent-red); text-shadow: var(--glow-red);
+  display: none; animation: phantomPulse 3s infinite;
+}
+.phantom-badge.show { display: block; }
+@keyframes phantomPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+/* ROOM DETAILS PANEL */
+.room-info {
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: 6px; padding: 14px;
+}
+.room-info-title { font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px; }
+.room-info-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+/* MULTI SELECT OPTIONS */
+.options-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0;
+}
+.option-btn {
+  padding: 14px 12px;
+  background: var(--bg-dark); border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; transition: all 0.2s;
+  font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 500;
+  color: var(--text-primary); text-align: left;
+  display: flex; align-items: center; gap: 10px;
+}
+.option-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.option-btn.selected { border-color: var(--accent-cyan); background: rgba(0,212,255,0.1); color: var(--accent-cyan); }
+.option-btn.correct { border-color: var(--accent-green); background: rgba(0,255,136,0.1); color: var(--accent-green); pointer-events: none; }
+.option-btn.wrong { border-color: var(--accent-red); background: rgba(255,58,92,0.1); color: var(--accent-red); pointer-events: none; }
+
+.attempts-display {
+  display: flex; gap: 6px; margin: 8px 0;
+}
+.attempt-pip {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent-red); transition: all 0.3s;
+}
+.attempt-pip.used { background: var(--border); opacity: 0.4; }
+
+/* Help section */
+.help-section { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.help-section summary { cursor: pointer; font-size: 12px; color: var(--text-dim); letter-spacing: 1px; }
+.help-body { margin-top: 8px; font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+/* RESPONSIVE FIXES */
+@media(max-width:600px) {
+  .puzzle-modal { padding: 24px 18px; }
+  .title-main { font-size: 28px; }
+  .mode-cards { grid-template-columns: 1fr; }
+  .options-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND EFFECTS -->
+<div class="bg-grid"></div>
+<div class="bg-particles" id="bgParticles"></div>
+<div class="pulse-overlay" id="pulseOverlay"></div>
+<div class="toast-container" id="toastContainer"></div>
+<div class="phantom-badge" id="phantomBadge">🎭 YOU ARE THE PHANTOM</div>
+
+<!-- ====== TITLE SCREEN ====== -->
+<div class="screen active" id="titleScreen">
+  <span class="title-logo"><span class="logo-icon">🏚️</span></span>
+  <h1 class="title-main">MindTrap<br>Labyrinth</h1>
+  <p class="title-sub">Enter if you dare</p>
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="showScreen('modeScreen')">⚔️ Enter the Labyrinth</button>
+    <div class="divider">or</div>
+    <button class="btn btn-ghost" onclick="showHowToPlay()">📜 How to Play</button>
+  </div>
+  <div class="stats-row" style="margin-top:40px">
+    <div class="stat-chip"><span class="stat-chip-icon">👥</span><span class="stat-chip-label">Players:</span><span class="stat-chip-val">1–10</span></div>
+    <div class="stat-chip"><span class="stat-chip-icon">🧩</span><span class="stat-chip-label">Puzzles:</span><span class="stat-chip-val">7 Types</span></div>
+    <div class="stat-chip"><span class="stat-chip-icon">🎭</span><span class="stat-chip-label">Modes:</span><span class="stat-chip-val">3</span></div>
+    <div class="stat-chip"><span class="stat-chip-icon">⚡</span><span class="stat-chip-label">Procedural:</span><span class="stat-chip-val">∞ Runs</span></div>
+  </div>
+</div>
+
+<!-- ====== MODE SCREEN ====== -->
+<div class="screen" id="modeScreen" style="flex-direction:column; align-items:center; padding:60px 20px; gap:24px;">
+  <h2 class="page-title">Choose Your Path</h2>
+  <p class="page-subtitle">Select your game mode and prepare for the labyrinth</p>
+  <div class="mode-cards">
+    <div class="mode-card solo" onclick="selectMode('solo')">
+      <span class="mode-icon">🧍</span>
+      <div class="mode-title">Dungeon Dive</div>
+      <p class="mode-desc">Face the labyrinth alone. Solve puzzles before the dungeon closes in. Climb the global leaderboard with your fastest escape time.</p>
+      <span class="mode-tag">1 PLAYER • SURVIVAL</span>
+    </div>
+    <div class="mode-card coop" onclick="selectMode('coop')">
+      <span class="mode-icon">🤝</span>
+      <div class="mode-title">Escape Together</div>
+      <p class="mode-desc">Work together to navigate the labyrinth. All players must reach the Core Room to win. Coordinate, communicate, and conquer.</p>
+      <span class="mode-tag">2–10 PLAYERS • CO-OP</span>
+    </div>
+    <div class="mode-card traitor" onclick="selectMode('traitor')">
+      <span class="mode-icon">🎭</span>
+      <div class="mode-title">Phantom Hunt</div>
+      <p class="mode-desc">One among you is the Dungeon Phantom. Work together to escape — but beware who you trust. Identify the traitor before it's too late.</p>
+      <span class="mode-tag">4–10 PLAYERS • TRAITOR</span>
+    </div>
+  </div>
+  <button class="btn btn-ghost btn-sm" onclick="showScreen('titleScreen')">← Back</button>
+</div>
+
+<!-- ====== SETUP SCREEN ====== -->
+<div class="screen" id="setupScreen">
+  <div style="display:flex;flex-direction:column;align-items:center;width:100%;padding:60px 20px;gap:24px;">
+    <h2 class="page-title" id="setupTitle">Dungeon Configuration</h2>
+    <p class="page-subtitle">Set up your labyrinth run</p>
+    <div class="setup-panel">
+      <div class="panel-title">⚙️ Game Settings</div>
+
+      <div class="form-group" id="playerSetupGroup">
+        <label class="form-label">Players</label>
+        <div class="player-list" id="playerList"></div>
+        <button class="btn btn-ghost btn-sm" id="addPlayerBtn" onclick="addPlayer()" style="width:100%;">+ Add Player</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Difficulty</label>
+        <div class="difficulty-select">
+          <div class="diff-btn active" id="diff-easy" onclick="setDiff('easy')">🟢 Easy</div>
+          <div class="diff-btn" id="diff-normal" onclick="setDiff('normal')">🟡 Normal</div>
+          <div class="diff-btn" id="diff-hard" onclick="setDiff('hard')">🔴 Hard</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Labyrinth Size</label>
+        <div class="difficulty-select">
+          <div class="diff-btn active" id="size-small" onclick="setSize('small')">Small 5×5</div>
+          <div class="diff-btn" id="size-medium" onclick="setSize('medium')">Medium 7×7</div>
+          <div class="diff-btn" id="size-large" onclick="setSize('large')">Large 9×9</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:8px;">
+        <button class="btn btn-primary btn-block" onclick="startGame()">🚪 Enter the Labyrinth</button>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="showScreen('modeScreen')">← Back</button>
+  </div>
+</div>
+
+<!-- ====== GAME SCREEN ====== -->
+<div class="screen" id="gameScreen">
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;width:100%;">
+    <!-- HEADER -->
+    <div class="game-header">
+      <div class="game-header-left">
+        <span class="game-logo-small">🏚️ MINDTRAP</span>
+        <div>
+          <div id="roundBadge" style="font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;">DUNGEON DIVE</div>
+          <div id="pulseTick" style="font-size:11px;color:var(--accent-red);display:none;">⚠️ DUNGEON PULSE ACTIVE</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="text-align:center;">
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:2px;">TIME</div>
+          <div class="timer-display" id="mainTimer">10:00</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:2px;">ROOMS</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--accent-green);" id="roomCounter">0/0</div>
+        </div>
+      </div>
+      <div class="player-hud" id="playerHud"></div>
+      <button class="btn btn-ghost btn-sm" onclick="confirmQuit()">✕ Quit</button>
+    </div>
+    <div class="pulse-bar"><div class="pulse-fill" id="timerBar" style="width:100%"></div></div>
+
+    <!-- BODY -->
+    <div class="game-body">
+      <!-- LEFT SIDEBAR -->
+      <div class="sidebar sidebar-left" id="leftSidebar">
+        <div>
+          <div class="sidebar-section-title">Your Role</div>
+          <div class="role-card" id="roleCard">
+            <span class="role-card-icon">⚔️</span>
+            <div class="role-card-name">Adventurer</div>
+            <div class="role-card-desc">You enter the labyrinth with no special powers. Your wits are your weapon.</div>
+          </div>
+        </div>
+        <div>
+          <div class="sidebar-section-title">Torch Charges</div>
+          <div class="torch-display" id="torchDisplay"></div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:8px;">Use torches for hints in puzzles</div>
+        </div>
+        <div>
+          <div class="sidebar-section-title">Current Room</div>
+          <div class="room-info" id="currentRoomInfo">
+            <div class="room-info-title">Starting Chamber</div>
+            <div class="room-info-desc">You stand at the entrance. The labyrinth stretches before you.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAP CENTER -->
+      <div class="map-container" id="mapContainer">
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="font-size:12px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;">Labyrinth Map</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Click adjacent rooms to move — solve puzzles to unlock doors</div>
+        </div>
+        <div class="map-grid" id="mapGrid"></div>
+        <div class="map-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(0,212,255,0.5);border:1px solid var(--accent-cyan)"></div>You</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(0,255,136,0.3);border:1px solid var(--accent-green)"></div>Solved</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(255,200,64,0.3);border:1px solid var(--accent-gold)"></div>Core</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(255,58,92,0.2);border:1px solid var(--accent-red)"></div>Locked</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--bg-deep);border:1px solid var(--border)"></div>Wall</div>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <div class="sidebar sidebar-right" id="rightSidebar">
+        <div>
+          <div class="sidebar-section-title">Players</div>
+          <div id="playerStatusList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+        <div>
+          <div class="sidebar-section-title">Event Log</div>
+          <div class="event-log" id="eventLog"></div>
+        </div>
+        <div id="phantomControlsSection" style="display:none;">
+          <div class="sidebar-section-title" style="color:var(--accent-red)">Phantom Powers</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-danger btn-sm" onclick="phantomLockRoom()" id="phantomLockBtn">🔒 Re-lock a Room</button>
+            <button class="btn btn-danger btn-sm" onclick="phantomFakeClue()" id="phantomClueBtn">💬 Plant False Clue</button>
+          </div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:8px;" id="phantomCooldown"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== VOTE SCREEN ====== -->
+<div class="screen" id="voteScreen">
+  <div style="display:flex;flex-direction:column;align-items:center;padding:60px 20px;gap:20px;width:100%">
+    <div class="vote-title">🎭 Who Is The Phantom?</div>
+    <div class="vote-subtitle">The labyrinth has been compromised. Vote to identify the traitor.<br>You have 30 seconds.</div>
+    <div id="voteTimer" style="font-family:'Share Tech Mono',monospace;font-size:48px;color:var(--accent-red);text-shadow:var(--glow-red)">30</div>
+    <div class="vote-grid" id="voteGrid"></div>
+    <div id="voteStatus" style="font-size:14px;color:var(--text-secondary)">Waiting for votes...</div>
+  </div>
+</div>
+
+<!-- ====== RESULT SCREEN ====== -->
+<div class="screen" id="resultScreen">
+  <span class="result-icon" id="resultIcon">🏆</span>
+  <div class="result-title" id="resultTitle">Victory!</div>
+  <div class="result-subtitle" id="resultSubtitle">You escaped the labyrinth!</div>
+  <div class="scoreboard" id="scoreboard"></div>
+  <div class="stats-row" id="resultStats"></div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:16px;">
+    <button class="btn btn-primary" onclick="showScreen('modeScreen')">Play Again</button>
+    <button class="btn btn-ghost" onclick="showScreen('titleScreen')">Main Menu</button>
+  </div>
+</div>
+
+<!-- ====== PUZZLE MODAL ====== -->
+<div class="modal-overlay" id="puzzleModal">
+  <div class="puzzle-modal" id="puzzleModalContent">
+    <div class="puzzle-header">
+      <div>
+        <div class="puzzle-type-badge" id="puzzleTypeBadge">🧩 PUZZLE</div>
+        <h2 class="puzzle-title" id="puzzleTitle" style="margin-top:12px">Room Puzzle</h2>
+      </div>
+      <div class="puzzle-timer-ring" id="puzzleTimerRing">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <circle class="ptr-bg" cx="28" cy="28" r="22"/>
+          <circle class="ptr-fill" id="ptrCircle" cx="28" cy="28" r="22" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ptr-label" id="ptrLabel">30</div>
+      </div>
+    </div>
+    <p class="puzzle-desc" id="puzzleDesc">Solve the puzzle to unlock the door.</p>
+    <div class="puzzle-content" id="puzzleContent"></div>
+    <div class="attempts-display" id="attemptsDisplay"></div>
+    <div class="answer-area" id="answerArea">
+      <input type="text" class="answer-input" id="answerInput" placeholder="Your answer..." autocomplete="off" onkeydown="handleAnswerKey(event)">
+      <button class="btn-submit" onclick="submitAnswer()">ENTER</button>
+    </div>
+    <button class="hint-btn" id="hintBtn" onclick="useHint()">🕯️ Use Torch Hint (<span id="hintCount">3</span> left)</button>
+    <div class="feedback-msg" id="feedbackMsg"></div>
+  </div>
+</div>
+
+<script>
+// ============================
+// STATE
+// ============================
+const G = {
+  mode: 'solo',
+  difficulty: 'easy',
+  size: 'small',
+  players: [],
+  currentPlayer: 0,
+  map: [],
+  mapSize: 5,
+  rooms: {},
+  playerPositions: {},
+  playerScores: {},
+  playerTorches: {},
+  playerAttempts: {},
+  playerEliminated: {},
+  roles: {},
+  phantomId: null,
+  phantomPowers: { lockCooldown: 0, clueCooldown: 0 },
+  currentPuzzle: null,
+  currentRoom: null,
+  mainTimerSec: 600,
+  pulseInterval: 90,
+  pulseCount: 0,
+  timerInterval: null,
+  puzzleTimerSec: 0,
+  puzzleInterval: null,
+  voteTimerInterval: null,
+  voteCounts: {},
+  myVote: null,
+  gameOver: false,
+  solvedRooms: new Set(),
+  coreRoom: null,
+  totalRooms: 0,
+  log: [],
+  hintCost: 1,
+};
+
+const ROLES = [
+  { id: 'codebreaker', name: 'The Codebreaker', icon: '🔓', desc: 'Cipher puzzles reveal one extra letter automatically.' },
+  { id: 'mathematician', name: 'The Mathematician', icon: '🔢', desc: 'Math puzzles show a partial answer as a hint.' },
+  { id: 'scout', name: 'The Scout', icon: '🔭', desc: 'You can peek into adjacent rooms before entering.' },
+  { id: 'linguist', name: 'The Linguist', icon: '📖', desc: 'Riddle puzzles give you an extra 15 seconds.' },
+  { id: 'locksmith', name: 'The Locksmith', icon: '🗝️', desc: 'You get one free re-attempt per puzzle.' },
+  { id: 'phantom', name: 'The Dungeon Phantom', icon: '🎭', desc: 'You work against the group. Re-lock rooms and plant false clues.' },
+  { id: 'wildcard', name: 'The Wildcard', icon: '🃏', desc: 'Pattern puzzles reveal one extra item in the sequence.' },
+];
+
+const ROOM_TYPES = [
+  { id: 'math', name: 'The Arithmetic Vault', icon: '🔢', badge: '🔢 ARITHMETIC', color: 'var(--accent-cyan)' },
+  { id: 'cipher', name: 'The Cipher Chamber', icon: '🔤', badge: '🔤 CIPHER', color: 'var(--accent-purple)' },
+  { id: 'pattern', name: 'The Pattern Forge', icon: '🌀', badge: '🌀 PATTERN', color: 'var(--accent-gold)' },
+  { id: 'memory', name: 'The Memory Spiral', icon: '💫', badge: '💫 MEMORY', color: 'var(--accent-cyan)' },
+  { id: 'riddle', name: 'The Riddle Gate', icon: '💬', badge: '💬 RIDDLE', color: 'var(--accent-purple)' },
+  { id: 'logic', name: 'The Logic Chamber', icon: '⚖️', badge: '⚖️ LOGIC', color: 'var(--accent-green)' },
+];
+
+const RIDDLES = [
+  { q: "I speak without a mouth and hear without ears. I have no body, but I come alive with the wind. What am I?", a: "echo" },
+  { q: "I have cities, but no houses live there. I have mountains, but no trees grow. I have water, but no fish swim. I have roads, but no cars drive. What am I?", a: "map" },
+  { q: "The more you take, the more you leave behind. What am I?", a: "footsteps" },
+  { q: "I can travel around the world without moving from my place. What am I?", a: "stamp" },
+  { q: "I have hands but cannot clap. What am I?", a: "clock" },
+  { q: "I'm light as a feather, yet the strongest man can't hold me for five minutes. What am I?", a: "breath" },
+  { q: "What has teeth but cannot bite?", a: "comb" },
+  { q: "What gets wetter as it dries?", a: "towel" },
+  { q: "I shave every day but my beard stays the same. What am I?", a: "barber" },
+  { q: "What can run but never walks, has a mouth but never talks, has a head but never weeps, has a bed but never sleeps?", a: "river" },
+];
+
+const LOGIC_PUZZLES = [
+  {
+    q: "Three students each have a different pet: a cat, a dog, and a fish. Alex does not have a cat. Jordan has a dog. Who has the fish?",
+    options: ["Alex", "Jordan", "Sam", "Unknown"],
+    a: "Alex",
+    hint: "Jordan has the dog. Alex doesn't have a cat. So Alex must have the fish."
+  },
+  {
+    q: "Five books are on a shelf: Red, Blue, Green, Yellow, Orange. Red is to the left of Blue. Green is between Yellow and Orange. Blue is the rightmost. Which book is second from left?",
+    options: ["Green", "Yellow", "Red", "Orange"],
+    a: "Yellow",
+    hint: "Red is leftmost, then Yellow, Green, Orange, Blue."
+  },
+  {
+    q: "If all Bloops are Razzles, and all Razzles are Lazzles, then are all Bloops definitely Lazzles?",
+    options: ["Yes", "No", "Sometimes", "Impossible to know"],
+    a: "Yes",
+    hint: "Transitive property: Bloops → Razzles → Lazzles"
+  },
+  {
+    q: "A farmer has 17 sheep. All but 9 die. How many sheep does the farmer have left?",
+    options: ["8", "9", "17", "0"],
+    a: "9",
+    hint: "All BUT 9 die — meaning 9 survive."
+  },
+];
+
+// ============================
+// BACKGROUND PARTICLES
+// ============================
+function initParticles() {
+  const container = document.getElementById('bgParticles');
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      --dur:${6+Math.random()*12}s;
+      --delay:${Math.random()*10}s;
+      --dx:${(Math.random()-0.5)*60}px;
+      background:${Math.random()>0.5?'var(--accent-cyan)':'var(--accent-gold)'};
+      opacity:0;
+    `;
+    container.appendChild(p);
+  }
+}
+
+// ============================
+// SCREEN MANAGEMENT
+// ============================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function selectMode(mode) {
+  G.mode = mode;
+  setupScreen(mode);
+  showScreen('setupScreen');
+}
+
+function setupScreen(mode) {
+  document.getElementById('setupTitle').textContent =
+    mode === 'solo' ? '⚔️ Dungeon Dive Setup' :
+    mode === 'coop' ? '🤝 Escape Together Setup' :
+    '🎭 Phantom Hunt Setup';
+
+  const pg = document.getElementById('playerSetupGroup');
+  const addBtn = document.getElementById('addPlayerBtn');
+
+  G.players = [];
+
+  if (mode === 'solo') {
+    pg.querySelector('.form-label').textContent = 'Your Name';
+    document.getElementById('playerList').innerHTML = '';
+    G.players = [{name:'', color:'#00d4ff'}];
+    const item = makePlayerInput(0, 'Enter your name...');
+    document.getElementById('playerList').appendChild(item);
+    addBtn.style.display = 'none';
+  } else {
+    pg.querySelector('.form-label').textContent = `Players (${mode==='traitor'?'4–10':'2–10'})`;
+    document.getElementById('playerList').innerHTML = '';
+    const startCount = mode === 'traitor' ? 4 : 2;
+    for (let i = 0; i < startCount; i++) {
+      G.players.push({name:'', color:playerColor(i)});
+      document.getElementById('playerList').appendChild(makePlayerInput(i, `Player ${i+1}`));
+    }
+    addBtn.style.display = 'block';
+  }
+}
+
+function playerColor(i) {
+  const colors = ['#00d4ff','#00ff88','#ffc840','#ff3a5c','#b44fff','#ff8c42','#4fffb0','#ff6b9d','#00bfff','#ffeb3b'];
+  return colors[i % colors.length];
+}
+
+function makePlayerInput(index, placeholder) {
+  const div = document.createElement('div');
+  div.className = 'player-item';
+  div.id = `playerItem${index}`;
+  div.innerHTML = `
+    <div class="player-num" style="color:${playerColor(index)};border-color:${playerColor(index)}30">${index+1}</div>
+    <input class="player-name-input" placeholder="${placeholder}" 
+           oninput="G.players[${index}].name=this.value" 
+           value="${G.players[index]?.name||''}">
+    ${index >= (G.mode==='traitor'?4:G.mode==='solo'?1:2) ? `<button class="remove-player" onclick="removePlayer(${index})">×</button>` : ''}
+  `;
+  return div;
+}
+
+function addPlayer() {
+  const max = 10;
+  if (G.players.length >= max) { showToast('Maximum 10 players!', 'error'); return; }
+  const idx = G.players.length;
+  G.players.push({name:'', color:playerColor(idx)});
+  document.getElementById('playerList').appendChild(makePlayerInput(idx, `Player ${idx+1}`));
+}
+
+function removePlayer(index) {
+  if (G.players.length <= (G.mode==='traitor'?4:2)) { showToast('Minimum player count reached!', 'error'); return; }
+  G.players.splice(index, 1);
+  document.getElementById('playerList').innerHTML = '';
+  G.players.forEach((p, i) => {
+    document.getElementById('playerList').appendChild(makePlayerInput(i, `Player ${i+1}`));
+  });
+}
+
+function setDiff(d) {
+  G.difficulty = d;
+  ['easy','normal','hard'].forEach(x => document.getElementById('diff-'+x).classList.toggle('active', x===d));
+}
+function setSize(s) {
+  G.size = s;
+  ['small','medium','large'].forEach(x => document.getElementById('size-'+x).classList.toggle('active', x===s));
+}
+
+// ============================
+// GAME START
+// ============================
+function startGame() {
+  // Validate players
+  const names = G.players.map((p,i) => p.name.trim() || `Player ${i+1}`);
+  G.players.forEach((p,i) => p.name = names[i]);
+
+  if (G.mode === 'traitor' && G.players.length < 4) {
+    showToast('Phantom Hunt requires at least 4 players!', 'error'); return;
+  }
+
+  // Setup
+  G.mapSize = G.size === 'small' ? 5 : G.size === 'medium' ? 7 : 9;
+  G.solvedRooms = new Set();
+  G.gameOver = false;
+  G.log = [];
+  G.pulseCount = 0;
+
+  const diffConfig = { easy: {time:900, pTimer:45}, normal: {time:600, pTimer:30}, hard: {time:420, pTimer:20} };
+  const dc = diffConfig[G.difficulty];
+  G.mainTimerSec = dc.time;
+  G._basePuzzleTime = dc.pTimer;
+
+  // Init player state
+  G.playerScores = {};
+  G.playerTorches = {};
+  G.playerAttempts = {};
+  G.playerEliminated = {};
+  G.playerPositions = {};
+  G.roles = {};
+
+  G.players.forEach((p, i) => {
+    G.playerScores[i] = 0;
+    G.playerTorches[i] = G.difficulty === 'easy' ? 5 : G.difficulty === 'normal' ? 3 : 2;
+    G.playerAttempts[i] = {};
+    G.playerEliminated[i] = false;
+  });
+
+  // Assign roles
+  const rolePool = [...ROLES.filter(r => r.id !== 'phantom')];
+  shuffle(rolePool);
+
+  if (G.mode === 'traitor') {
+    G.phantomId = Math.floor(Math.random() * G.players.length);
+    G.roles[G.phantomId] = ROLES.find(r => r.id === 'phantom');
+    G.players.forEach((_, i) => {
+      if (i !== G.phantomId) G.roles[i] = rolePool[i % rolePool.length];
+    });
+    G.phantomPowers = { lockUsed: false, clueUsed: false };
+  } else {
+    G.players.forEach((_, i) => G.roles[i] = rolePool[i % rolePool.length]);
+    G.phantomId = null;
+  }
+
+  G.currentPlayer = 0;
+
+  // Generate map
+  generateMap();
+
+  // Place players at start
+  const startRoom = findStartRoom();
+  G.players.forEach((_, i) => G.playerPositions[i] = [...startRoom]);
+
+  // Build UI
+  buildGameUI();
+  showScreen('gameScreen');
+
+  // Start timer
+  startMainTimer();
+
+  // Log
+  addLog(`The labyrinth seals behind you...`, 'info');
+  addLog(`${G.players[G.currentPlayer].name}'s turn`, 'info');
+
+  if (G.mode === 'traitor') {
+    setTimeout(() => {
+      showToast(`You are: ${G.roles[G.currentPlayer].name}`, 'info');
+      if (G.currentPlayer === G.phantomId) {
+        document.getElementById('phantomBadge').classList.add('show');
+      }
+    }, 500);
+  } else {
+    setTimeout(() => {
+      showToast(`Your role: ${G.roles[G.currentPlayer].name}`, 'info');
+    }, 500);
+  }
+}
+
+// ============================
+// MAP GENERATION
+// ============================
+function generateMap() {
+  const n = G.mapSize;
+  G.map = Array.from({length:n}, () => Array(n).fill(0));
+  G.rooms = {};
+
+  // Generate maze using recursive backtracker
+  const visited = Array.from({length:n}, () => Array(n).fill(false));
+
+  function inBounds(r,c) { return r>=0&&r<n&&c>=0&&c<n; }
+
+  function carve(r,c) {
+    visited[r][c] = true;
+    G.map[r][c] = 1; // room
+    const dirs = shuffle([[0,2],[2,0],[0,-2],[-2,0]]);
+    for (const [dr,dc] of dirs) {
+      const nr = r+dr, nc = c+dc;
+      if (inBounds(nr,nc) && !visited[nr][nc]) {
+        G.map[r+dr/2][c+dc/2] = 1; // passage
+        carve(nr,nc);
+      }
+    }
+  }
+
+  carve(0,0);
+
+  // Assign room types to room cells
+  G.totalRooms = 0;
+  for (let r=0; r<n; r++) {
+    for (let c=0; c<n; c++) {
+      if (G.map[r][c] === 1) {
+        const key = `${r},${c}`;
+        const type = ROOM_TYPES[Math.floor(Math.random()*ROOM_TYPES.length)];
+        G.rooms[key] = { type, solved: false, locked: false, puzzle: null };
+        G.totalRooms++;
+      }
+    }
+  }
+
+  // Set core room at far corner
+  const corePos = [n-1, n-1];
+  // Make sure it's a room
+  G.map[n-1][n-1] = 1;
+  G.map[n-2][n-1] = 1;
+  G.map[n-1][n-2] = 1;
+  G.rooms[`${n-1},${n-1}`] = { type: { id:'core', name:'The Core Room', icon:'🌟', badge:'⭐ CORE CHAMBER', color:'var(--accent-gold)' }, solved:false, locked:false, puzzle:null, isCore:true };
+  G.coreRoom = corePos;
+}
+
+function findStartRoom() {
+  // Top-left area
+  for (let r=0; r<G.mapSize; r++)
+    for (let c=0; c<G.mapSize; c++)
+      if (G.map[r][c] === 1) return [r,c];
+  return [0,0];
+}
+
+function isAdjacent(pos, target) {
+  const [r1,c1] = pos, [r2,c2] = target;
+  return (Math.abs(r1-r2) + Math.abs(c1-c2)) === 1;
+}
+
+// ============================
+// BUILD GAME UI
+// ============================
+function buildGameUI() {
+  buildMap();
+  buildPlayerHud();
+  buildPlayerStatus();
+  updateRoleCard();
+  updateTorches();
+  updateRoomCounter();
+
+  document.getElementById('roundBadge').textContent =
+    G.mode === 'solo' ? 'DUNGEON DIVE' :
+    G.mode === 'coop' ? 'ESCAPE TOGETHER' : 'PHANTOM HUNT';
+}
+
+function buildMap() {
+  const grid = document.getElementById('mapGrid');
+  grid.style.gridTemplateColumns = `repeat(${G.mapSize}, 52px)`;
+  grid.innerHTML = '';
+
+  for (let r=0; r<G.mapSize; r++) {
+    for (let c=0; c<G.mapSize; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'map-cell';
+      cell.id = `cell-${r}-${c}`;
+
+      if (G.map[r][c] === 0) {
+        cell.classList.add('wall');
+      } else {
+        const key = `${r},${c}`;
+        const room = G.rooms[key];
+        cell.classList.add('room');
+        cell.innerHTML = room?.isCore ? '🌟' : room?.type?.icon || '?';
+        cell.onclick = () => tryMoveToRoom(r,c);
+      }
+      grid.appendChild(cell);
+    }
+  }
+  refreshMap();
+}
+
+function refreshMap() {
+  for (let r=0; r<G.mapSize; r++) {
+    for (let c=0; c<G.mapSize; c++) {
+      const cell = document.getElementById(`cell-${r}-${c}`);
+      if (!cell || G.map[r][c] === 0) continue;
+      const key = `${r},${c}`;
+      const room = G.rooms[key];
+      // Reset
+      cell.className = 'map-cell room';
+      if (room?.isCore) cell.classList.add('room-core');
+      else if (room?.solved) cell.classList.add('room-solved');
+      else if (room?.locked) cell.classList.add('room-locked');
+
+      // Remove old dots
+      cell.querySelectorAll('.cell-player-dot').forEach(d=>d.remove());
+
+      // Add player dots
+      G.players.forEach((_,i) => {
+        if (G.playerEliminated[i]) return;
+        const [pr,pc] = G.playerPositions[i]||[0,0];
+        if (pr===r && pc===c) {
+          if (i === G.currentPlayer) cell.classList.add('room-current');
+          const dot = document.createElement('div');
+          dot.className = 'cell-player-dot';
+          dot.style.cssText = `background:${G.players[i].color};box-shadow:0 0 6px ${G.players[i].color};right:${4+i*10}px`;
+          cell.appendChild(dot);
+        }
+      });
+    }
+  }
+}
+
+function buildPlayerHud() {
+  const hud = document.getElementById('playerHud');
+  hud.innerHTML = '';
+  G.players.forEach((p,i) => {
+    const el = document.createElement('div');
+    el.className = `player-hud-item${i===G.currentPlayer?' active':''}`;
+    el.id = `hud-${i}`;
+    el.innerHTML = `
+      <div class="phud-avatar" style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44">${p.name[0]?.toUpperCase()||'?'}</div>
+      <span>${p.name}</span>
+      <span class="phud-score" id="hudscore-${i}">${G.playerScores[i]}</span>
+    `;
+    hud.appendChild(el);
+  });
+}
+
+function buildPlayerStatus() {
+  const list = document.getElementById('playerStatusList');
+  list.innerHTML = '';
+  G.players.forEach((p,i) => {
+    const el = document.createElement('div');
+    el.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-dark);border:1px solid var(--border);border-radius:4px;border-color:${i===G.currentPlayer?p.color:'var(--border)'}`;
+    el.id = `pstatus-${i}`;
+    const role = G.roles[i];
+    el.innerHTML = `
+      <div style="width:28px;height:28px;border-radius:50%;background:${p.color}22;border:1px solid ${p.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${p.color};flex-shrink:0">${p.name[0]?.toUpperCase()||'?'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-dim)">${role?.icon||''} ${role?.name||''}</div>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--accent-gold)" id="pscore-${i}">${G.playerScores[i]}</div>
+    `;
+    list.appendChild(el);
+  });
+
+  // Show phantom controls if current player is phantom
+  const pcs = document.getElementById('phantomControlsSection');
+  if (G.mode === 'traitor' && G.currentPlayer === G.phantomId) {
+    pcs.style.display = 'block';
+  } else {
+    pcs.style.display = 'none';
+  }
+}
+
+function updateRoleCard() {
+  const role = G.roles[G.currentPlayer];
+  if (!role) return;
+  const card = document.getElementById('roleCard');
+  card.innerHTML = `
+    <span class="role-card-icon">${role.icon}</span>
+    <div class="role-card-name">${role.name}</div>
+    <div class="role-card-desc">${role.desc}</div>
+  `;
+}
+
+function updateTorches() {
+  const td = document.getElementById('torchDisplay');
+  td.innerHTML = '';
+  const total = G.playerTorches[G.currentPlayer] || 0;
+  const maxT = G.difficulty === 'easy' ? 5 : G.difficulty === 'normal' ? 3 : 2;
+  for (let i=0; i<maxT; i++) {
+    const t = document.createElement('div');
+    t.className = `torch${i >= total ? ' spent' : ''}`;
+    t.innerHTML = '🕯️';
+    td.appendChild(t);
+  }
+  document.getElementById('hintCount').textContent = total;
+}
+
+function updateRoomCounter() {
+  document.getElementById('roomCounter').textContent = `${G.solvedRooms.size}/${G.totalRooms}`;
+}
+
+function updateCurrentRoomInfo(r, c) {
+  const key = `${r},${c}`;
+  const room = G.rooms[key];
+  if (!room) return;
+  const el = document.getElementById('currentRoomInfo');
+  el.innerHTML = `
+    <div class="room-info-title">${room.type?.icon} ${room.type?.name||'Unknown Room'}</div>
+    <div class="room-info-desc">${room.solved ? '✅ Solved — doors unlocked' : room.isCore ? '⭐ The final challenge awaits...' : '🔒 Unsolved — solve the puzzle to pass'}</div>
+  `;
+}
+
+// ============================
+// MOVEMENT
+// ============================
+function tryMoveToRoom(r, c) {
+  if (G.gameOver) return;
+  const curPos = G.playerPositions[G.currentPlayer];
+  const key = `${r},${c}`;
+  const room = G.rooms[key];
+  if (!room) return;
+
+  // Must be adjacent or same room
+  if (!isAdjacent(curPos, [r,c])) {
+    showToast('You can only move to adjacent rooms!', 'warn');
+    return;
+  }
+
+  // Move to room
+  G.playerPositions[G.currentPlayer] = [r, c];
+  refreshMap();
+  updateCurrentRoomInfo(r,c);
+
+  if (room.isCore) {
+    // Check if all players are here (coop/traitor) or solo
+    if (G.mode === 'solo') {
+      // Solve core puzzle
+      openPuzzle(r, c, true);
+    } else {
+      // All non-phantom non-eliminated players must reach core
+      openPuzzle(r, c, true);
+    }
+    return;
+  }
+
+  if (room.solved) {
+    addLog(`${G.players[G.currentPlayer].name} passed through solved room`, 'info');
+    nextTurn();
+    return;
+  }
+
+  // Open puzzle
+  openPuzzle(r, c, false);
+}
+
+function nextTurn() {
+  if (G.mode === 'solo' || G.players.length === 1) return;
+
+  let next = (G.currentPlayer + 1) % G.players.length;
+  let tries = 0;
+  while (G.playerEliminated[next] && tries < G.players.length) {
+    next = (next+1) % G.players.length;
+    tries++;
+  }
+  G.currentPlayer = next;
+
+  // Update UI for new player
+  document.querySelectorAll('.player-hud-item').forEach((el,i) => el.classList.toggle('active', i===next));
+  buildPlayerStatus();
+  updateRoleCard();
+  updateTorches();
+  refreshMap();
+
+  // Update phantom badge
+  if (G.mode === 'traitor') {
+    document.getElementById('phantomBadge').classList.toggle('show', next === G.phantomId);
+    if (next === G.phantomId) showToast('Your turn, Phantom...', 'warn');
+    else showToast(`${G.players[next].name}'s turn`, 'info');
+  } else {
+    showToast(`${G.players[next].name}'s turn`, 'info');
+  }
+
+  addLog(`${G.players[next].name}'s turn`, 'info');
+}
+
+// ============================
+// PUZZLES
+// ============================
+function openPuzzle(r, c, isCore) {
+  const key = `${r},${c}`;
+  const room = G.rooms[key];
+  const ptype = isCore ? 'math' : room.type.id;
+
+  // Generate puzzle
+  const puzzle = generatePuzzle(ptype, isCore);
+  G.currentPuzzle = puzzle;
+  G.currentRoom = [r,c];
+
+  // Get timer
+  const role = G.roles[G.currentPlayer];
+  let time = G._basePuzzleTime;
+  if (role?.id === 'linguist' && ptype === 'riddle') time += 15;
+
+  G.puzzleTimerSec = time;
+
+  // Build modal
+  const badge = document.getElementById('puzzleTypeBadge');
+  badge.textContent = isCore ? '⭐ CORE CHAMBER' : room.type.badge;
+  badge.style.color = isCore ? 'var(--accent-gold)' : room.type.color;
+  badge.style.borderColor = isCore ? 'var(--accent-gold)' : room.type.color;
+  badge.style.background = isCore ? 'rgba(255,200,64,0.1)' : `${room.type.color}11`;
+
+  document.getElementById('puzzleTitle').textContent = isCore ? 'The Final Gauntlet' : room.type.name;
+  document.getElementById('puzzleDesc').textContent = puzzle.desc;
+
+  // Build content
+  buildPuzzleContent(puzzle);
+
+  // Attempts
+  const attempts = G.difficulty === 'easy' ? 5 : G.difficulty === 'normal' ? 3 : 2;
+  G.currentPuzzle.maxAttempts = attempts;
+  G.currentPuzzle.attemptsLeft = attempts;
+  buildAttemptsDisplay(attempts);
+
+  // Hint
+  updateTorches();
+
+  // Feedback
+  const fb = document.getElementById('feedbackMsg');
+  fb.className = 'feedback-msg';
+  fb.textContent = '';
+
+  // Show modal
+  document.getElementById('puzzleModal').classList.add('active');
+
+  // Start puzzle timer
+  startPuzzleTimer(time);
+}
+
+function buildPuzzleContent(puzzle) {
+  const content = document.getElementById('puzzleContent');
+  const answerArea = document.getElementById('answerArea');
+  answerArea.style.display = 'flex';
+  document.getElementById('answerInput').value = '';
+  document.getElementById('answerInput').className = 'answer-input';
+
+  if (puzzle.type === 'math') {
+    content.innerHTML = `
+      <div class="math-display">${puzzle.display}</div>
+      <div style="text-align:center;font-size:13px;color:var(--text-secondary)">Solve for the missing value</div>
+    `;
+  } else if (puzzle.type === 'pattern') {
+    content.innerHTML = `
+      <div class="pattern-display">${puzzle.items.map((item,i) =>
+        `<div class="pattern-item${item==='?'?' unknown':''}">${item}</div>`
+      ).join('')}</div>
+      <div style="text-align:center;font-size:13px;color:var(--text-secondary)">Find the next number in the sequence</div>
+    `;
+  } else if (puzzle.type === 'cipher') {
+    let keyHtml = puzzle.cipherKey.map(pair => `
+      <div class="cipher-pair">
+        <div class="cipher-from">${pair.encoded}</div>
+        <div class="cipher-to">${pair.plain}</div>
+      </div>
+    `).join('');
+    content.innerHTML = `
+      <div class="cipher-display">${puzzle.encoded}</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;text-align:center">CIPHER KEY (encoded → decoded)</div>
+      <div class="cipher-key">${keyHtml}</div>
+    `;
+  } else if (puzzle.type === 'memory') {
+    content.innerHTML = buildMemoryPuzzle(puzzle);
+    answerArea.style.display = 'none';
+  } else if (puzzle.type === 'riddle') {
+    content.innerHTML = `<div class="riddle-text">"${puzzle.question}"</div>`;
+  } else if (puzzle.type === 'logic') {
+    content.innerHTML = `
+      <div style="background:var(--bg-dark);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;font-size:15px;line-height:1.6;">${puzzle.question}</div>
+      <div class="options-grid">${puzzle.options.map(opt =>
+        `<button class="option-btn" onclick="selectLogicOption(this,'${opt}','${puzzle.answer}')">${opt}</button>`
+      ).join('')}</div>
+    `;
+    answerArea.style.display = 'none';
+  }
+}
+
+function buildMemoryPuzzle(puzzle) {
+  const cols = puzzle.gridSize;
+  return `
+    <div style="text-align:center;margin-bottom:12px;font-size:13px;color:var(--text-secondary)">Memorize the highlighted cells, then recreate the pattern</div>
+    <div class="memory-grid" id="memoryGrid" style="grid-template-columns:repeat(${cols},70px)">
+      ${puzzle.cells.map((cell,i) => `
+        <div class="memory-cell${cell.show?' revealed':''}" id="mcell-${i}" onclick="selectMemoryCell(${i})" data-idx="${i}">
+          ${cell.show ? cell.icon : ''}
+        </div>
+      `).join('')}
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--accent-gold)" id="memoryPhase">Memorizing... <span id="memoryCountdown">5</span>s</div>
+  `;
+}
+
+let memoryPhase = 'show';
+let memoryCells = [];
+let memorySelected = [];
+let memoryCorrect = [];
+
+function startMemoryPhase(puzzle) {
+  memoryPhase = 'show';
+  memorySelected = [];
+  memoryCorrect = puzzle.cells.filter(c=>c.show).map(c=>c.index);
+
+  let count = 5;
+  const interval = setInterval(() => {
+    count--;
+    const el = document.getElementById('memoryCountdown');
+    if (el) el.textContent = count;
+    if (count <= 0) {
+      clearInterval(interval);
+      // Hide all cells
+      memoryPhase = 'input';
+      puzzle.cells.forEach((cell,i) => {
+        const el = document.getElementById(`mcell-${i}`);
+        if (el) { el.classList.remove('revealed'); el.classList.add('hidden'); el.textContent=''; }
+      });
+      const phase = document.getElementById('memoryPhase');
+      if (phase) phase.textContent = 'Now select the cells you saw!';
+    }
+  }, 1000);
+}
+
+function selectMemoryCell(idx) {
+  if (memoryPhase !== 'input') return;
+  const el = document.getElementById(`mcell-${idx}`);
+  if (!el) return;
+  const selIdx = memorySelected.indexOf(idx);
+  if (selIdx === -1) {
+    memorySelected.push(idx);
+    el.classList.add('selected');
+    el.textContent = '✓';
+  } else {
+    memorySelected.splice(selIdx,1);
+    el.classList.remove('selected');
+    el.textContent = '';
+  }
+
+  // Check if selection count matches
+  if (memorySelected.length === memoryCorrect.length) {
+    // Verify
+    const correct = memoryCorrect.every(i => memorySelected.includes(i)) && memorySelected.length === memoryCorrect.length;
+    memoryCorrect.forEach(i => {
+      const cel = document.getElementById(`mcell-${i}`);
+      if (cel) { cel.className = 'memory-cell correct'; cel.textContent = G.currentPuzzle.cells[i].icon; }
+    });
+    if (correct) {
+      onPuzzleCorrect();
+    } else {
+      memorySelected.forEach(i => {
+        if (!memoryCorrect.includes(i)) {
+          const cel = document.getElementById(`mcell-${i}`);
+          if (cel) { cel.className = 'memory-cell wrong'; }
+        }
+      });
+      setTimeout(() => onPuzzleWrong(), 800);
+    }
+  }
+}
+
+function selectLogicOption(btn, option, answer) {
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  setTimeout(() => {
+    if (option === answer) onPuzzleCorrect();
+    else {
+      btn.classList.remove('selected');
+      btn.classList.add('wrong');
+      onPuzzleWrong();
+    }
+  }, 400);
+}
+
+// ============================
+// PUZZLE GENERATION
+// ============================
+function generatePuzzle(type, isCore) {
+  if (isCore) {
+    // Core puzzle is always a harder math
+    return genMathPuzzle(true);
+  }
+  switch(type) {
+    case 'math': return genMathPuzzle(false);
+    case 'pattern': return genPatternPuzzle();
+    case 'cipher': return genCipherPuzzle();
+    case 'memory': return genMemoryPuzzle();
+    case 'riddle': return genRiddlePuzzle();
+    case 'logic': return genLogicPuzzle();
+    default: return genMathPuzzle(false);
+  }
+}
+
+function genMathPuzzle(hard) {
+  const role = G.roles[G.currentPlayer];
+  let a, b, op, ans, display, desc;
+
+  if (hard || G.difficulty === 'hard') {
+    // Multi-step
+    const x = rand(10,50), y = rand(2,10), z = rand(5,20);
+    ans = x + y * z;
+    display = `${x} + ${y} × ${z} = ?`;
+    desc = 'Solve this arithmetic expression. Remember order of operations!';
+  } else if (G.difficulty === 'normal') {
+    const x = rand(20,100), y = rand(10,50);
+    const ops = ['+','-','×'];
+    op = ops[rand(0,2)];
+    if (op==='+') ans=x+y;
+    else if (op==='-') ans=x-y;
+    else ans=x*y;
+    display = `${x} ${op} ${y} = ?`;
+    desc = 'Calculate the result of this expression.';
+  } else {
+    a = rand(5,20); b = rand(5,20);
+    op = Math.random()>0.5 ? '+' : '-';
+    ans = op==='+' ? a+b : a-b;
+    display = `${a} ${op} ${b} = ?`;
+    desc = 'Solve the equation to unlock the vault.';
+  }
+
+  // Mathematician hint
+  if (role?.id === 'mathematician') {
+    desc += ` (Hint: the answer ends in ${ans%10})`;
+  }
+
+  return { type:'math', display, answer: String(ans), desc };
+}
+
+function genPatternPuzzle() {
+  const role = G.roles[G.currentPlayer];
+  const patterns = [
+    { gen: () => { const s=rand(1,5),d=rand(2,5); const seq=[s,s+d,s+2*d,s+3*d,s+4*d,s+5*d]; return {items:[...seq.slice(0,4),'?'], answer:seq[4], type:'arithmetic'} } },
+    { gen: () => { const s=rand(2,4); const seq=[s,s*s,s*s*s,s*s*s*s]; return {items:[s,s*s,s*s*s,'?'], answer:seq[3], type:'power'} } },
+    { gen: () => { const fib=[1,1,2,3,5,8,13,21,34,55]; const start=rand(0,4); return {items:fib.slice(start,start+4).concat(['?']), answer:fib[start+4], type:'fibonacci'} } },
+  ];
+  const chosen = patterns[rand(0,patterns.length-1)].gen();
+
+  let items = chosen.items.map(n => String(n));
+  if (role?.id === 'wildcard') {
+    // Show one more item
+    items = [...chosen.items.slice(0,3).map(n=>String(n)), '?'];
+  }
+
+  return {
+    type: 'pattern',
+    items,
+    answer: String(chosen.answer),
+    desc: 'Identify the pattern and find the missing number.',
+  };
+}
+
+function genCipherPuzzle() {
+  const role = G.roles[G.currentPlayer];
+  const words = ['DOOR','OPEN','LOCK','KEY','PASS','CODE','GATE','PATH','EXIT','SAFE','ROOM','CLUE'];
+  const word = words[rand(0,words.length-1)];
+  const shift = rand(1,6);
+
+  function encodeChar(c) {
+    const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    return a[(a.indexOf(c)+shift)%26];
+  }
+  const encoded = word.split('').map(encodeChar).join('  ');
+  const letters = G.difficulty === 'hard' ? 3 : G.difficulty === 'normal' ? 4 : 5;
+
+  // Show partial key
+  const uniqueChars = [...new Set(word.split(''))];
+  let keyChars = uniqueChars.slice(0, letters);
+
+  // Codebreaker gets an extra reveal
+  if (role?.id === 'codebreaker' && keyChars.length < uniqueChars.length) {
+    keyChars = uniqueChars.slice(0, letters+1);
+  }
+
+  const cipherKey = keyChars.map(c => ({ plain: c, encoded: encodeChar(c) }));
+
+  return {
+    type: 'cipher',
+    encoded: encoded,
+    answer: word,
+    cipherKey,
+    shift,
+    desc: 'Decode the encrypted word using the cipher key provided.',
+  };
+}
+
+function genMemoryPuzzle() {
+  const size = G.difficulty === 'hard' ? 4 : 3;
+  const total = size * size;
+  const icons = ['🔮','⚡','🌙','⭐','🔥','💎','🗝️','📜','🧿','🎭','⚔️','🛡️','🌀','💫','🔔'];
+  const count = G.difficulty === 'hard' ? 5 : G.difficulty === 'normal' ? 4 : 3;
+
+  // Pick random cells to highlight
+  const indices = shuffle([...Array(total).keys()]).slice(0, count);
+  const icon = icons[rand(0, icons.length-1)];
+
+  const cells = Array.from({length:total}, (_,i) => ({
+    index: i, show: indices.includes(i), icon
+  }));
+
+  return {
+    type: 'memory',
+    cells,
+    gridSize: size,
+    answer: 'memory_special',
+    desc: `Memorize the highlighted cells, then recreate the pattern. ${count} cells are marked.`,
+  };
+}
+
+function genRiddlePuzzle() {
+  const riddle = RIDDLES[rand(0, RIDDLES.length-1)];
+  return {
+    type: 'riddle',
+    question: riddle.q,
+    answer: riddle.a,
+    desc: 'Answer the ancient riddle to pass through the gate.',
+  };
+}
+
+function genLogicPuzzle() {
+  const p = LOGIC_PUZZLES[rand(0, LOGIC_PUZZLES.length-1)];
+  return {
+    type: 'logic',
+    question: p.q,
+    options: shuffle([...p.options]),
+    answer: p.a,
+    hint: p.hint,
+    desc: 'Use logic to determine the correct answer.',
+  };
+}
+
+// ============================
+// PUZZLE TIMER
+// ============================
+function startPuzzleTimer(seconds) {
+  clearInterval(G.puzzleInterval);
+  G.puzzleTimerSec = seconds;
+  updatePuzzleTimerUI();
+
+  G.puzzleInterval = setInterval(() => {
+    G.puzzleTimerSec--;
+    updatePuzzleTimerUI();
+    if (G.puzzleTimerSec <= 0) {
+      clearInterval(G.puzzleInterval);
+      onPuzzleTimeout();
+    }
+  }, 1000);
+
+  // Start memory phase if memory puzzle
+  if (G.currentPuzzle?.type === 'memory') {
+    setTimeout(() => startMemoryPhase(G.currentPuzzle), 100);
+  }
+}
+
+function updatePuzzleTimerUI() {
+  const t = G.puzzleTimerSec;
+  document.getElementById('ptrLabel').textContent = t;
+  const circ = 138;
+  const offset = circ - (circ * t / G._basePuzzleTime);
+  document.getElementById('ptrCircle').style.strokeDashoffset = Math.min(circ, offset);
+  if (t <= 5) document.getElementById('ptrCircle').style.stroke = 'var(--accent-red)';
+  else document.getElementById('ptrCircle').style.stroke = 'var(--accent-gold)';
+}
+
+// ============================
+// ANSWER SUBMISSION
+// ============================
+function handleAnswerKey(e) { if (e.key==='Enter') submitAnswer(); }
+
+function submitAnswer() {
+  if (!G.currentPuzzle) return;
+  const input = document.getElementById('answerInput');
+  const val = input.value.trim().toLowerCase();
+  const correct = G.currentPuzzle.answer.toLowerCase();
+
+  if (val === correct) {
+    onPuzzleCorrect();
+  } else {
+    input.classList.add('wrong');
+    setTimeout(() => input.classList.remove('wrong'), 500);
+    onPuzzleWrong();
+  }
+}
+
+function onPuzzleCorrect() {
+  clearInterval(G.puzzleInterval);
+  const fb = document.getElementById('feedbackMsg');
+  fb.className = 'feedback-msg success show';
+
+  const [r,c] = G.currentRoom;
+  const key = `${r},${c}`;
+
+  const isCore = G.rooms[key]?.isCore;
+  if (isCore) {
+    fb.textContent = '⭐ The Core Room is conquered! You have escaped the labyrinth!';
+    setTimeout(() => triggerVictory(), 1200);
+    return;
+  }
+
+  G.rooms[key].solved = true;
+  G.solvedRooms.add(key);
+
+  // Points
+  const basePoints = G.difficulty === 'easy' ? 100 : G.difficulty === 'normal' ? 150 : 200;
+  const timeBonus = Math.floor(G.puzzleTimerSec / G._basePuzzleTime * 50);
+  const points = basePoints + timeBonus;
+  G.playerScores[G.currentPlayer] += points;
+
+  fb.textContent = `✅ Correct! +${points} points! Door unlocked!`;
+
+  updateScoreUI();
+  updateRoomCounter();
+  refreshMap();
+  updateCurrentRoomInfo(r,c);
+  addLog(`${G.players[G.currentPlayer].name} solved ${G.rooms[key].type.name} (+${points}pts)`, 'good');
+
+  // Check all rooms solved
+  const nonCoreRooms = Object.keys(G.rooms).filter(k => !G.rooms[k].isCore);
+  const allSolved = nonCoreRooms.every(k => G.rooms[k].solved);
+
+  if (allSolved) {
+    showToast('All rooms solved! Find the Core Room!', 'warn');
+  }
+
+  setTimeout(() => {
+    closePuzzleModal();
+    if (G.mode !== 'solo') nextTurn();
+  }, 1200);
+}
+
+function onPuzzleWrong() {
+  G.currentPuzzle.attemptsLeft--;
+
+  const fb = document.getElementById('feedbackMsg');
+  fb.className = 'feedback-msg error show';
+
+  if (G.currentPuzzle.attemptsLeft <= 0) {
+    fb.textContent = `❌ No attempts left! You are trapped!`;
+    clearInterval(G.puzzleInterval);
+    // Collapse room
+    setTimeout(() => {
+      const [r,c] = G.currentRoom;
+      const key = `${r},${c}`;
+      G.rooms[key].locked = true;
+      G.playerAttempts[G.currentPlayer][key] = 0;
+      addLog(`${G.players[G.currentPlayer].name} was trapped in a room!`, 'bad');
+      closePuzzleModal();
+      triggerScreenShake();
+      if (G.mode !== 'solo') {
+        // Check if enough players eliminated
+        G.playerEliminated[G.currentPlayer] = false; // just skip turn
+        nextTurn();
+      } else {
+        // Solo: game over
+        setTimeout(() => triggerDefeat('You failed too many puzzles!'), 800);
+      }
+    }, 1500);
+    return;
+  }
+
+  buildAttemptsDisplay(G.currentPuzzle.maxAttempts);
+  fb.textContent = `❌ Wrong! ${G.currentPuzzle.attemptsLeft} attempt${G.currentPuzzle.attemptsLeft!==1?'s':''} remaining.`;
+
+  setTimeout(() => {
+    fb.className = 'feedback-msg';
+  }, 2000);
+}
+
+function onPuzzleTimeout() {
+  const fb = document.getElementById('feedbackMsg');
+  fb.className = 'feedback-msg error show';
+  fb.textContent = '⏱️ Time\'s up! The door remains locked.';
+  closePuzzleModal(1500);
+  triggerScreenShake();
+  addLog(`${G.players[G.currentPlayer].name} ran out of time!`, 'bad');
+  setTimeout(() => {
+    if (G.mode !== 'solo') nextTurn();
+  }, 1500);
+}
+
+function buildAttemptsDisplay(max) {
+  const d = document.getElementById('attemptsDisplay');
+  const left = G.currentPuzzle?.attemptsLeft ?? max;
+  d.innerHTML = '';
+  for (let i=0;i<max;i++) {
+    const pip = document.createElement('div');
+    pip.className = `attempt-pip${i >= left ? ' used' : ''}`;
+    d.appendChild(pip);
+  }
+}
+
+function useHint() {
+  const torches = G.playerTorches[G.currentPlayer];
+  if (torches <= 0) { showToast('No torch charges remaining!', 'error'); return; }
+  G.playerTorches[G.currentPlayer]--;
+  updateTorches();
+
+  const puzzle = G.currentPuzzle;
+  let hintText = '';
+
+  if (puzzle.type === 'math') {
+    const ans = parseInt(puzzle.answer);
+    hintText = `Hint: The answer is ${ans > 0 ? 'positive' : 'negative'} and ${ans % 2 === 0 ? 'even' : 'odd'}. Approximate range: ${Math.floor(ans/10)*10}-${Math.floor(ans/10)*10+9}`;
+  } else if (puzzle.type === 'pattern') {
+    hintText = `Hint: Look at the differences between consecutive numbers.`;
+  } else if (puzzle.type === 'cipher') {
+    hintText = `Hint: The shift value is ${puzzle.shift}. Each letter is shifted ${puzzle.shift} position(s) forward in the alphabet.`;
+  } else if (puzzle.type === 'riddle') {
+    hintText = `Hint: The answer is a common, everyday object or concept.`;
+  } else if (puzzle.type === 'logic') {
+    hintText = puzzle.hint || 'Think step by step and eliminate impossible options.';
+  } else if (puzzle.type === 'memory') {
+    hintText = `Hint: The correct pattern has ${G.currentPuzzle.cells.filter(c=>c.show).length} highlighted cells.`;
+  }
+
+  const fb = document.getElementById('feedbackMsg');
+  fb.className = 'feedback-msg show';
+  fb.style.background = 'rgba(255,200,64,0.1)';
+  fb.style.color = 'var(--accent-gold)';
+  fb.style.borderColor = 'var(--accent-gold)';
+  fb.textContent = hintText;
+  addLog(`${G.players[G.currentPlayer].name} used a torch hint`, 'warn');
+}
+
+function closePuzzleModal(delay=0) {
+  setTimeout(() => {
+    document.getElementById('puzzleModal').classList.remove('active');
+    clearInterval(G.puzzleInterval);
+    G.currentPuzzle = null;
+  }, delay);
+}
+
+// ============================
+// MAIN TIMER
+// ============================
+function startMainTimer() {
+  clearInterval(G.timerInterval);
+  let pulseNext = G.pulseInterval;
+
+  G.timerInterval = setInterval(() => {
+    G.mainTimerSec--;
+    updateMainTimerUI();
+
+    pulseNext--;
+    if (pulseNext <= 0) {
+      pulseNext = G.pulseInterval;
+      triggerDungeonPulse();
+    }
+
+    if (G.mainTimerSec <= 0) {
+      clearInterval(G.timerInterval);
+      triggerDefeat('The labyrinth consumed you — time ran out!');
+    }
+  }, 1000);
+}
+
+function updateMainTimerUI() {
+  const t = G.mainTimerSec;
+  const m = Math.floor(t/60), s = t%60;
+  const el = document.getElementById('mainTimer');
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.classList.toggle('danger', t < 60);
+
+  const total = G.difficulty === 'easy' ? 900 : G.difficulty === 'normal' ? 600 : 420;
+  document.getElementById('timerBar').style.width = `${(t/total)*100}%`;
+}
+
+function triggerDungeonPulse() {
+  G.pulseCount++;
+  G.pulseInterval = Math.max(30, G.pulseInterval - 10);
+
+  const overlay = document.getElementById('pulseOverlay');
+  overlay.classList.remove('active');
+  void overlay.offsetWidth;
+  overlay.classList.add('active');
+
+  addLog(`⚡ Dungeon Pulse! Puzzles grow harder...`, 'warn');
+  showToast(`⚡ DUNGEON PULSE — difficulty rising!`, 'warn');
+
+  // Reduce puzzle time
+  G._basePuzzleTime = Math.max(10, G._basePuzzleTime - 3);
+
+  const tick = document.getElementById('pulseTick');
+  tick.style.display = 'block';
+  setTimeout(() => tick.style.display = 'none', 3000);
+}
+
+// ============================
+// PHANTOM POWERS
+// ============================
+function phantomLockRoom() {
+  if (G.phantomPowers.lockUsed) { showToast('Lock power already used!', 'error'); return; }
+  // Find a solved room to re-lock
+  const solved = Object.keys(G.rooms).filter(k => G.rooms[k].solved && !G.rooms[k].isCore);
+  if (solved.length === 0) { showToast('No solved rooms to lock!', 'error'); return; }
+  const target = solved[rand(0, solved.length-1)];
+  G.rooms[target].solved = false;
+  G.rooms[target].locked = true;
+  G.solvedRooms.delete(target);
+  G.phantomPowers.lockUsed = true;
+  document.getElementById('phantomLockBtn').disabled = true;
+  refreshMap();
+  updateRoomCounter();
+  addLog('A room has been re-locked by an unseen force...', 'bad');
+  showToast('🔒 Room re-locked!', 'warn');
+}
+
+function phantomFakeClue() {
+  if (G.phantomPowers.clueUsed) { showToast('Clue power already used!', 'error'); return; }
+  G.phantomPowers.clueUsed = true;
+  document.getElementById('phantomClueBtn').disabled = true;
+  const fakes = ['🎭 Someone whispers: "The answer is always 42..."', '🎭 A voice echoes: "Skip the next room — it\'s already solved..."', '🎭 Shadow message: "The pattern goes backwards..."'];
+  addLog(fakes[rand(0,fakes.length-1)], 'warn');
+  showToast('False clue planted!', 'warn');
+}
+
+// ============================
+// VOTE SCREEN
+// ============================
+function triggerVote() {
+  clearInterval(G.timerInterval);
+  clearInterval(G.puzzleInterval);
+  showScreen('voteScreen');
+
+  G.voteCounts = {};
+  G.myVote = null;
+  G.players.forEach((_,i) => G.voteCounts[i] = 0);
+
+  buildVoteGrid();
+
+  let sec = 30;
+  document.getElementById('voteTimer').textContent = sec;
+  G.voteTimerInterval = setInterval(() => {
+    sec--;
+    document.getElementById('voteTimer').textContent = sec;
+    if (sec <= 0) {
+      clearInterval(G.voteTimerInterval);
+      resolveVote();
+    }
+  }, 1000);
+}
+
+function buildVoteGrid() {
+  const grid = document.getElementById('voteGrid');
+  const avatars = ['🧙','🧝','🧛','🧟','🧞','🧜','🤺','🧗'];
+  grid.innerHTML = G.players.map((p,i) => `
+    <div class="vote-card" id="vcard-${i}" onclick="castVote(${i})">
+      <span class="vote-avatar">${avatars[i%avatars.length]}</span>
+      <div class="vote-name">${p.name}</div>
+      <div class="vote-count" id="vc-${i}">0 votes</div>
+    </div>
+  `).join('');
+}
+
+function castVote(idx) {
+  if (G.myVote !== null) return;
+  G.myVote = idx;
+  document.getElementById(`vcard-${idx}`).classList.add('voted');
+  G.voteCounts[idx]++;
+
+  // Simulate other players voting (random, biased toward phantom)
+  G.players.forEach((_,i) => {
+    if (i === G.currentPlayer) return;
+    const target = Math.random() < 0.35 ? G.phantomId : rand(0, G.players.length-1);
+    G.voteCounts[target]++;
+    document.getElementById(`vc-${target}`).textContent = `${G.voteCounts[target]} votes`;
+  });
+  document.getElementById(`vc-${idx}`).textContent = `${G.voteCounts[idx]} votes`;
+  document.getElementById('voteStatus').textContent = 'All votes cast!';
+
+  setTimeout(resolveVote, 2000);
+}
+
+function resolveVote() {
+  clearInterval(G.voteTimerInterval);
+  const maxVotes = Math.max(...Object.values(G.voteCounts));
+  const voted = parseInt(Object.keys(G.voteCounts).find(k => G.voteCounts[k] === maxVotes));
+
+  if (voted === G.phantomId) {
+    // Phantom caught!
+    triggerVictory(true);
+  } else {
+    // Wrong person voted out — phantom wins
+    triggerDefeat(`Wrong vote! The Phantom was ${G.players[G.phantomId].name}!`);
+  }
+}
+
+// ============================
+// VICTORY / DEFEAT
+// ============================
+function triggerVictory(phantomCaught=false) {
+  G.gameOver = true;
+  clearInterval(G.timerInterval);
+  clearInterval(G.puzzleInterval);
+  document.getElementById('puzzleModal').classList.remove('active');
+
+  document.getElementById('resultIcon').textContent = phantomCaught ? '🎭' : '🏆';
+  document.getElementById('resultTitle').textContent = phantomCaught ? 'Phantom Unmasked!' : 'Labyrinth Escaped!';
+  document.getElementById('resultSubtitle').textContent = phantomCaught
+    ? `The group identified ${G.players[G.phantomId].name} as the Phantom! Victory!`
+    : G.mode === 'solo' ? `You conquered the labyrinth in ${formatTime(G.mainTimerSec)} remaining!`
+    : 'Your team escaped the labyrinth together!';
+
+  buildScoreboard();
+  buildResultStats();
+  setTimeout(() => showScreen('resultScreen'), 800);
+}
+
+function triggerDefeat(reason) {
+  G.gameOver = true;
+  clearInterval(G.timerInterval);
+  clearInterval(G.puzzleInterval);
+  document.getElementById('puzzleModal').classList.remove('active');
+
+  document.getElementById('resultIcon').textContent = '💀';
+  document.getElementById('resultTitle').textContent = 'Defeated!';
+  document.getElementById('resultSubtitle').textContent = reason;
+
+  buildScoreboard();
+  buildResultStats();
+  setTimeout(() => showScreen('resultScreen'), 800);
+}
+
+function buildScoreboard() {
+  const sb = document.getElementById('scoreboard');
+  const sorted = G.players.map((p,i)=>({name:p.name,score:G.playerScores[i],idx:i}))
+    .sort((a,b)=>b.score-a.score);
+
+  const medals = ['🥇','🥈','🥉'];
+  const rowClasses = ['first','second','third'];
+
+  sb.innerHTML = sorted.map((p,i) => `
+    <div class="scoreboard-row ${rowClasses[i]||''}">
+      <div class="score-rank">${medals[i]||`#${i+1}`}</div>
+      <div class="score-name">${p.name} <span style="font-size:11px;color:var(--text-dim)">${G.roles[p.idx]?.icon||''} ${G.roles[p.idx]?.name||''}</span></div>
+      <div class="score-pts">${p.score}pts</div>
+    </div>
+  `).join('');
+}
+
+function buildResultStats() {
+  const rs = document.getElementById('resultStats');
+  const timeLeft = formatTime(G.mainTimerSec);
+  rs.innerHTML = `
+    <div class="stat-chip"><span class="stat-chip-icon">⏱️</span><span class="stat-chip-label">Time Left:</span><span class="stat-chip-val">${timeLeft}</span></div>
+    <div class="stat-chip"><span class="stat-chip-icon">🚪</span><span class="stat-chip-label">Rooms Solved:</span><span class="stat-chip-val">${G.solvedRooms.size}/${G.totalRooms}</span></div>
+    <div class="stat-chip"><span class="stat-chip-icon">⚡</span><span class="stat-chip-label">Pulses:</span><span class="stat-chip-val">${G.pulseCount}</span></div>
+  `;
+}
+
+// ============================
+// UI HELPERS
+// ============================
+function updateScoreUI() {
+  G.players.forEach((_,i) => {
+    const hs = document.getElementById(`hudscore-${i}`);
+    const ps = document.getElementById(`pscore-${i}`);
+    if (hs) hs.textContent = G.playerScores[i];
+    if (ps) ps.textContent = G.playerScores[i];
+  });
+}
+
+function addLog(msg, type='info') {
+  const log = document.getElementById('eventLog');
+  if (!log) return;
+  const el = document.createElement('div');
+  el.className = `log-entry ${type}`;
+  el.textContent = msg;
+  log.prepend(el);
+  while (log.children.length > 20) log.removeChild(log.lastChild);
+}
+
+function showToast(msg, type='info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3200);
+}
+
+function triggerScreenShake() {
+  document.body.classList.add('shake');
+  setTimeout(() => document.body.classList.remove('shake'), 400);
+}
+
+function confirmQuit() {
+  if (confirm('Exit to main menu? Current progress will be lost.')) {
+    clearInterval(G.timerInterval);
+    clearInterval(G.puzzleInterval);
+    clearInterval(G.voteTimerInterval);
+    document.getElementById('puzzleModal').classList.remove('active');
+    document.getElementById('phantomBadge').classList.remove('show');
+    showScreen('titleScreen');
+  }
+}
+
+function showHowToPlay() {
+  alert(`🏚️ MINDTRAP LABYRINTH — HOW TO PLAY
+
+🎯 GOAL
+Solve puzzles in each room to unlock doors and navigate to the Core Room to escape.
+
+🗺️ MOVEMENT
+Click adjacent rooms on the map to move. Rooms must be solved to pass through.
+
+🧩 PUZZLES
+Each room contains a unique puzzle:
+• 🔢 Math — Arithmetic & equations
+• 🌀 Pattern — Number sequences
+• 🔤 Cipher — Decode encrypted words
+• 💫 Memory — Recall highlighted cells
+• 💬 Riddle — Answer ancient riddles
+• ⚖️ Logic — Deductive reasoning
+
+🕯️ HINTS
+Use torch charges for hints. They're limited, so use wisely!
+
+⚡ DUNGEON PULSE
+Every 90s the labyrinth "pulses" — puzzles get harder and timers shrink!
+
+🎭 PHANTOM HUNT (Traitor Mode)
+One player is secretly the Phantom. They can re-lock rooms and plant false clues. Vote them out before escaping!
+
+Good luck, adventurer! 🗝️`);
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec/60), s = sec%60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// ============================
+// UTILITIES
+// ============================
+function rand(min, max) { return Math.floor(Math.random()*(max-min+1))+min; }
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i=a.length-1;i>0;i--) { const j=rand(0,i); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+// ============================
+// INIT
+// ============================
+initParticles();
+</script>
+</body>
+</html>

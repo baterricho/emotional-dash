@@ -1,4 +1,4 @@
-"""
+﻿"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║  EMOTION ARCHITECT  ◆  ULTIMATE EDITION  ◆                                ║
 ║  20 Worlds · 3D Phong Balls · Weather · Combos · Parallax · World Cards    ║
@@ -10,11 +10,30 @@ import pygame
 from pygame import gfxdraw
 
 pygame.init()
-pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=256)
+MIXER_OK = True
+try:
+    pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=256)
+except Exception:
+    MIXER_OK = False
 
 W, H   = 1280, 720
 FPS    = 60
-SAVE   = "ea_v5.json"
+APP_NAME = "EmotionArchitect"
+SAVE_BASENAME = "ea_v5.json"
+
+def get_save_path():
+    if sys.platform.startswith("win"):
+        base = os.getenv("APPDATA") or os.path.expanduser("~")
+    elif sys.platform == "darwin":
+        base = os.path.join(os.path.expanduser("~"), "Library", "Application Support")
+    else:
+        base = os.getenv("XDG_DATA_HOME") or os.path.join(os.path.expanduser("~"), ".local", "share")
+    save_dir = os.path.join(base, APP_NAME)
+    os.makedirs(save_dir, exist_ok=True)
+    return os.path.join(save_dir, SAVE_BASENAME)
+
+SAVE = get_save_path()
+LEGACY_SAVE = os.path.join(os.getcwd(), SAVE_BASENAME)
 screen = pygame.display.set_mode((W, H))
 pygame.display.set_caption("EMOTION ARCHITECT: ULTIMATE")
 clock  = pygame.time.Clock()
@@ -45,15 +64,24 @@ F_TAG   = mkf(["Consolas","Lucida Console","Courier New"], 12)
 #  SAVE / STATS
 # ═══════════════════════════════════════════════════════════════
 def load_save():
+    if not os.path.exists(SAVE) and os.path.exists(LEGACY_SAVE):
+        try:
+            with open(LEGACY_SAVE, encoding="utf-8") as f:
+                data = json.load(f)
+            with open(SAVE, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+            return data
+        except Exception:
+            pass
     if os.path.exists(SAVE):
         try:
-            with open(SAVE) as f: return json.load(f)
+            with open(SAVE, encoding="utf-8") as f: return json.load(f)
         except: pass
     return {"level":0,"best":0,"deaths":0,"runs":0,"coins":0,
             "cleared":[False]*20,"best_times":[0]*20}
 
 def save_game(d):
-    with open(SAVE,"w") as f: json.dump(d,f)
+    with open(SAVE, "w", encoding="utf-8") as f: json.dump(d,f)
 
 SD = load_save()
 if "cleared" not in SD: SD["cleared"] = [False]*20
@@ -223,22 +251,28 @@ def gen_sound(freq=440,dur=0.1,vol=0.35,wave="sine",sweep=0,env_exp=0.15):
     snd=pygame.mixer.Sound(buffer=bytes(buf)); snd.set_volume(vol); return snd
 
 try:
-    SND_JUMP    = gen_sound(560, 0.07, 0.26,"sine",  sweep=0.6)
-    SND_DJUMP   = gen_sound(720, 0.09, 0.28,"sine",  sweep=0.8)
-    SND_LAND    = gen_sound(170, 0.07, 0.18,"sine",  sweep=-0.4)
-    SND_DIE     = gen_sound(100, 0.60, 0.42,"square",sweep=-0.9)
-    SND_WIN     = gen_sound(820, 0.38, 0.36,"sine",  sweep=0.35)
-    SND_COIN    = gen_sound(900, 0.09, 0.23,"sine",  sweep=0.25)
-    SND_PORTAL  = gen_sound(460, 0.25, 0.30,"saw",   sweep=0.45)
-    SND_DASH    = gen_sound(320, 0.05, 0.18,"saw",   sweep=1.2)
-    SND_BOOST   = gen_sound(680, 0.14, 0.28,"sine",  sweep=0.9)
-    SND_COMBO   = gen_sound(1100,0.12, 0.32,"tri",   sweep=0.2)
-    SND_PAUSE   = gen_sound(280, 0.08, 0.20,"sine",  sweep=-0.2)
-    SOUND_OK    = True
-except: SOUND_OK = False
+    SND_JUMP = SND_DJUMP = SND_LAND = SND_DIE = None
+    SND_WIN = SND_COIN = SND_PORTAL = SND_DASH = None
+    SND_BOOST = SND_COMBO = SND_PAUSE = None
+    SOUND_OK = False
+    if MIXER_OK:
+        SND_JUMP    = gen_sound(560, 0.07, 0.26,"sine",  sweep=0.6)
+        SND_DJUMP   = gen_sound(720, 0.09, 0.28,"sine",  sweep=0.8)
+        SND_LAND    = gen_sound(170, 0.07, 0.18,"sine",  sweep=-0.4)
+        SND_DIE     = gen_sound(100, 0.60, 0.42,"square",sweep=-0.9)
+        SND_WIN     = gen_sound(820, 0.38, 0.36,"sine",  sweep=0.35)
+        SND_COIN    = gen_sound(900, 0.09, 0.23,"sine",  sweep=0.25)
+        SND_PORTAL  = gen_sound(460, 0.25, 0.30,"saw",   sweep=0.45)
+        SND_DASH    = gen_sound(320, 0.05, 0.18,"saw",   sweep=1.2)
+        SND_BOOST   = gen_sound(680, 0.14, 0.28,"sine",  sweep=0.9)
+        SND_COMBO   = gen_sound(1100,0.12, 0.32,"tri",   sweep=0.2)
+        SND_PAUSE   = gen_sound(280, 0.08, 0.20,"sine",  sweep=-0.2)
+        SOUND_OK    = True
+except Exception:
+    SOUND_OK = False
 
 def play(snd):
-    if SOUND_OK:
+    if SOUND_OK and snd is not None:
         try: snd.play()
         except: pass
 
