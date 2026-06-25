@@ -1,0 +1,21 @@
+{
+  "level": 50,
+  "name": "Inner Battle",
+  "emotion": "Anger",
+  "world": "Volcano Heart",
+  "story": "Fire becomes motion instead of destruction.",
+  "background": "volcano_heart",
+  "visual_effects": [
+    "fire_particles",
+    "embers"
+  ],
+  "platform_style": "lava",
+  "hazards": [],
+  "special_mechanic": "fast_reactions",
+  "difficulty": "hard",
+  "decorations": [
+    "volcano_heart_silhouette",
+    "anger_motes"
+  ],
+  "lighting": "dramatic"
+}

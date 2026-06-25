@@ -1,0 +1,21 @@
+{
+  "level": 22,
+  "name": "Glass Orchard Journey",
+  "emotion": "Strength",
+  "world": "Glass Orchard",
+  "story": "The glass orchard turns strength into a playable memory.",
+  "background": "glass_orchard",
+  "visual_effects": [
+    "glowing_particles",
+    "crystal_sparks"
+  ],
+  "platform_style": "mossy",
+  "hazards": [],
+  "special_mechanic": "air_control",
+  "difficulty": "normal",
+  "decorations": [
+    "glass_orchard_silhouette",
+    "strength_motes"
+  ],
+  "lighting": "soft"
+}

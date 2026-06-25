@@ -1,0 +1,21 @@
+{
+  "level": 57,
+  "name": "Dream Hospital Journey",
+  "emotion": "Grief",
+  "world": "Dream Hospital",
+  "story": "The dream hospital turns grief into a playable memory.",
+  "background": "dream_hospital",
+  "visual_effects": [
+    "glitch",
+    "broken_light"
+  ],
+  "platform_style": "normal",
+  "hazards": [],
+  "special_mechanic": "basic_jump",
+  "difficulty": "hard",
+  "decorations": [
+    "dream_hospital_silhouette",
+    "grief_motes"
+  ],
+  "lighting": "dramatic"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 55,
+  "name": "Velvet Volcano Journey",
+  "emotion": "Acceptance",
+  "world": "Velvet Volcano",
+  "story": "The velvet volcano turns acceptance into a playable memory.",
+  "background": "velvet_volcano",
+  "visual_effects": [
+    "fire_particles",
+    "embers"
+  ],
+  "platform_style": "metal",
+  "hazards": [],
+  "special_mechanic": "randomized_rhythm",
+  "difficulty": "hard",
+  "decorations": [
+    "velvet_volcano_silhouette",
+    "acceptance_motes"
+  ],
+  "lighting": "dramatic"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 17,
+  "name": "Underground Echo",
+  "emotion": "Persistence",
+  "world": "Underground Mine",
+  "story": "Every echo says to keep going deeper.",
+  "background": "underground_mine",
+  "visual_effects": [
+    "dust",
+    "falling_pebbles"
+  ],
+  "platform_style": "stone",
+  "hazards": [],
+  "special_mechanic": "crumble_paths",
+  "difficulty": "normal",
+  "decorations": [
+    "underground_mine_silhouette",
+    "persistence_motes"
+  ],
+  "lighting": "soft"
+}

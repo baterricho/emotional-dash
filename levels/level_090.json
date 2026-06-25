@@ -1,0 +1,21 @@
+{
+  "level": 90,
+  "name": "Understanding",
+  "emotion": "Acceptance",
+  "world": "Memory Garden",
+  "story": "Every previous world returns as something softer.",
+  "background": "memory_garden",
+  "visual_effects": [
+    "petals",
+    "glowing_particles"
+  ],
+  "platform_style": "mossy",
+  "hazards": [],
+  "special_mechanic": "master_previous_skills",
+  "difficulty": "expert",
+  "decorations": [
+    "memory_garden_silhouette",
+    "acceptance_motes"
+  ],
+  "lighting": "dramatic"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 48,
+  "name": "Courage Arena Journey",
+  "emotion": "Ambition",
+  "world": "Courage Arena",
+  "story": "The courage arena turns ambition into a playable memory.",
+  "background": "courage_arena",
+  "visual_effects": [
+    "sand",
+    "heat_haze"
+  ],
+  "platform_style": "stone",
+  "hazards": [],
+  "special_mechanic": "boost_chain",
+  "difficulty": "hard",
+  "decorations": [
+    "courage_arena_silhouette",
+    "ambition_motes"
+  ],
+  "lighting": "dramatic"
+}

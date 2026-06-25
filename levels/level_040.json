@@ -1,0 +1,21 @@
+{
+  "level": 40,
+  "name": "Finding Hope",
+  "emotion": "Hope",
+  "world": "Sky Garden",
+  "story": "Golden air returns after the longest climb.",
+  "background": "sky_garden_high",
+  "visual_effects": [
+    "sun_rays",
+    "petals"
+  ],
+  "platform_style": "mossy",
+  "hazards": [],
+  "special_mechanic": "air_movement",
+  "difficulty": "hard",
+  "decorations": [
+    "sky_garden_high_silhouette",
+    "hope_motes"
+  ],
+  "lighting": "dramatic"
+}

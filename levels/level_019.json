@@ -1,0 +1,21 @@
+{
+  "level": 19,
+  "name": "Shadow Hand",
+  "emotion": "Doubt",
+  "world": "Shadow Realm",
+  "story": "Shadows stretch toward every hesitation.",
+  "background": "shadow_realm",
+  "visual_effects": [
+    "dark_fog",
+    "purple_particles"
+  ],
+  "platform_style": "gore",
+  "hazards": [],
+  "special_mechanic": "phase_platforms",
+  "difficulty": "normal",
+  "decorations": [
+    "shadow_realm_silhouette",
+    "doubt_motes"
+  ],
+  "lighting": "soft"
+}

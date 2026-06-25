@@ -1,0 +1,21 @@
+{
+  "level": 69,
+  "name": "Pearl Desert Journey",
+  "emotion": "Patience",
+  "world": "Pearl Desert",
+  "story": "The pearl desert turns patience into a playable memory.",
+  "background": "pearl_desert",
+  "visual_effects": [
+    "petals",
+    "sun_rays"
+  ],
+  "platform_style": "sandstone",
+  "hazards": [],
+  "special_mechanic": "randomized_rhythm",
+  "difficulty": "hard",
+  "decorations": [
+    "pearl_desert_silhouette",
+    "patience_motes"
+  ],
+  "lighting": "dramatic"
+}

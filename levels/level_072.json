@@ -1,0 +1,21 @@
+{
+  "level": 72,
+  "name": "Lullaby Station Journey",
+  "emotion": "Playfulness",
+  "world": "Lullaby Station",
+  "story": "The lullaby station turns playfulness into a playable memory.",
+  "background": "lullaby_station",
+  "visual_effects": [
+    "glowing_particles",
+    "crystal_sparks"
+  ],
+  "platform_style": "normal",
+  "hazards": [],
+  "special_mechanic": "moving_platforms",
+  "difficulty": "hard",
+  "decorations": [
+    "lullaby_station_silhouette",
+    "playfulness_motes"
+  ],
+  "lighting": "dramatic"
+}

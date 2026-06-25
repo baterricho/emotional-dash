@@ -1,0 +1,22 @@
+{
+  "level": 100,
+  "name": "Emotional Balance",
+  "emotion": "Growth",
+  "world": "The Emotional Core",
+  "story": "All emotions connect inside one final living light.",
+  "background": "emotional_core",
+  "visual_effects": [
+    "rainbow_motes",
+    "heart_energy",
+    "glowing_particles"
+  ],
+  "platform_style": "divine",
+  "hazards": [],
+  "special_mechanic": "ultimate_challenge",
+  "difficulty": "final",
+  "decorations": [
+    "emotional_core_silhouette",
+    "growth_motes"
+  ],
+  "lighting": "dramatic"
+}

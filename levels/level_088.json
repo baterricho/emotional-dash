@@ -1,0 +1,21 @@
+{
+  "level": 88,
+  "name": "Echoing Playground Journey",
+  "emotion": "Relief",
+  "world": "Echoing Playground",
+  "story": "The echoing playground turns relief into a playable memory.",
+  "background": "echoing_playground",
+  "visual_effects": [
+    "sand",
+    "heat_haze"
+  ],
+  "platform_style": "lava",
+  "hazards": [],
+  "special_mechanic": "phase_platforms",
+  "difficulty": "expert",
+  "decorations": [
+    "echoing_playground_silhouette",
+    "relief_motes"
+  ],
+  "lighting": "dramatic"
+}

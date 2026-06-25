@@ -1,0 +1,21 @@
+{
+  "level": 12,
+  "name": "Sugar Dream",
+  "emotion": "Playfulness",
+  "world": "Candy Dream",
+  "story": "A bright dream remembers joy without apology.",
+  "background": "candy_dream",
+  "visual_effects": [
+    "sparkle",
+    "floating_lights"
+  ],
+  "platform_style": "normal",
+  "hazards": [],
+  "special_mechanic": "bounce_routes",
+  "difficulty": "normal",
+  "decorations": [
+    "candy_dream_silhouette",
+    "playfulness_motes"
+  ],
+  "lighting": "soft"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 99,
+  "name": "Compass Nebula Journey",
+  "emotion": "Patience",
+  "world": "Compass Nebula",
+  "story": "The compass nebula turns patience into a playable memory.",
+  "background": "compass_nebula",
+  "visual_effects": [
+    "petals",
+    "sun_rays"
+  ],
+  "platform_style": "sandstone",
+  "hazards": [],
+  "special_mechanic": "basic_jump",
+  "difficulty": "expert",
+  "decorations": [
+    "compass_nebula_silhouette",
+    "patience_motes"
+  ],
+  "lighting": "dramatic"
+}

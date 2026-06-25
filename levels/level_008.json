@@ -1,0 +1,21 @@
+{
+  "level": 8,
+  "name": "Tide Memory",
+  "emotion": "Reflection",
+  "world": "Ocean Ruins",
+  "story": "Old waves carry pieces of a forgotten self.",
+  "background": "ocean_ruins",
+  "visual_effects": [
+    "bubbles",
+    "water_rays"
+  ],
+  "platform_style": "coral",
+  "hazards": [],
+  "special_mechanic": "long_jumps",
+  "difficulty": "easy",
+  "decorations": [
+    "ocean_ruins_silhouette",
+    "reflection_motes"
+  ],
+  "lighting": "soft"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 39,
+  "name": "Starlit Archive Journey",
+  "emotion": "Patience",
+  "world": "Starlit Archive",
+  "story": "The starlit archive turns patience into a playable memory.",
+  "background": "starlit_archive",
+  "visual_effects": [
+    "petals",
+    "sun_rays"
+  ],
+  "platform_style": "sandstone",
+  "hazards": [],
+  "special_mechanic": "sliding_mechanics",
+  "difficulty": "hard",
+  "decorations": [
+    "starlit_archive_silhouette",
+    "patience_motes"
+  ],
+  "lighting": "dramatic"
+}

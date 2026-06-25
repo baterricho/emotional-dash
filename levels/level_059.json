@@ -1,0 +1,21 @@
+{
+  "level": 59,
+  "name": "Lantern Citadel Journey",
+  "emotion": "Forgiveness",
+  "world": "Lantern Citadel",
+  "story": "The lantern citadel turns forgiveness into a playable memory.",
+  "background": "lantern_citadel",
+  "visual_effects": [
+    "petals",
+    "sun_rays"
+  ],
+  "platform_style": "corroded",
+  "hazards": [],
+  "special_mechanic": "dash_routes",
+  "difficulty": "hard",
+  "decorations": [
+    "lantern_citadel_silhouette",
+    "forgiveness_motes"
+  ],
+  "lighting": "dramatic"
+}

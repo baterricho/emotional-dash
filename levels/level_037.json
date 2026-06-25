@@ -1,0 +1,21 @@
+{
+  "level": 37,
+  "name": "Rain Lantern Alley Journey",
+  "emotion": "Hope",
+  "world": "Rain Lantern Alley",
+  "story": "The rain lantern alley turns hope into a playable memory.",
+  "background": "rain_lantern_alley",
+  "visual_effects": [
+    "glitch",
+    "broken_light"
+  ],
+  "platform_style": "mossy",
+  "hazards": [],
+  "special_mechanic": "precision_jumps",
+  "difficulty": "hard",
+  "decorations": [
+    "rain_lantern_alley_silhouette",
+    "hope_motes"
+  ],
+  "lighting": "dramatic"
+}

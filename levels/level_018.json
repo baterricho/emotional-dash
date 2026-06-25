@@ -1,0 +1,21 @@
+{
+  "level": 18,
+  "name": "Golden Question",
+  "emotion": "Ambition",
+  "world": "Golden Palace",
+  "story": "A shining palace asks what victory is worth.",
+  "background": "golden_palace",
+  "visual_effects": [
+    "gold_motes",
+    "sun_rays"
+  ],
+  "platform_style": "sandstone",
+  "hazards": [],
+  "special_mechanic": "precision_jumps",
+  "difficulty": "normal",
+  "decorations": [
+    "golden_palace_silhouette",
+    "ambition_motes"
+  ],
+  "lighting": "soft"
+}

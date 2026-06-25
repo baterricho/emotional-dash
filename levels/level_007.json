@@ -1,0 +1,21 @@
+{
+  "level": 7,
+  "name": "Sky Bloom",
+  "emotion": "Hope",
+  "world": "Sky Bloom Garden",
+  "story": "Floating gardens bloom where falling once felt final.",
+  "background": "sky_bloom_garden",
+  "visual_effects": [
+    "petals",
+    "sun_rays"
+  ],
+  "platform_style": "mossy",
+  "hazards": [],
+  "special_mechanic": "air_jumps",
+  "difficulty": "easy",
+  "decorations": [
+    "sky_garden_silhouette",
+    "hope_motes"
+  ],
+  "lighting": "soft"
+}

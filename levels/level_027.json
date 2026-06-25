@@ -1,0 +1,21 @@
+{
+  "level": 27,
+  "name": "Aurora Fields Journey",
+  "emotion": "Grief",
+  "world": "Aurora Fields",
+  "story": "The aurora fields turns grief into a playable memory.",
+  "background": "aurora_fields",
+  "visual_effects": [
+    "glitch",
+    "broken_light"
+  ],
+  "platform_style": "normal",
+  "hazards": [],
+  "special_mechanic": "randomized_rhythm",
+  "difficulty": "normal",
+  "decorations": [
+    "aurora_fields_silhouette",
+    "grief_motes"
+  ],
+  "lighting": "soft"
+}

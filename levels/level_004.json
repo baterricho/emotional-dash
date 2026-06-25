@@ -1,0 +1,21 @@
+{
+  "level": 4,
+  "name": "Neon Pulse",
+  "emotion": "Excitement",
+  "world": "Neon City",
+  "story": "The city beats like a new idea trying to escape.",
+  "background": "neon_city",
+  "visual_effects": [
+    "sparks",
+    "glow_lines"
+  ],
+  "platform_style": "neon",
+  "hazards": [],
+  "special_mechanic": "dash_intro",
+  "difficulty": "easy",
+  "decorations": [
+    "neon_city_silhouette",
+    "excitement_motes"
+  ],
+  "lighting": "soft"
+}

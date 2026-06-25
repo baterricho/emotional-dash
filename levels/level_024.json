@@ -1,0 +1,21 @@
+{
+  "level": 24,
+  "name": "Velvet Canyon Journey",
+  "emotion": "Joy",
+  "world": "Velvet Canyon",
+  "story": "The velvet canyon turns joy into a playable memory.",
+  "background": "velvet_canyon",
+  "visual_effects": [
+    "snow",
+    "soft_fog"
+  ],
+  "platform_style": "sandstone",
+  "hazards": [],
+  "special_mechanic": "mastery_mix",
+  "difficulty": "normal",
+  "decorations": [
+    "velvet_canyon_silhouette",
+    "joy_motes"
+  ],
+  "lighting": "soft"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 14,
+  "name": "Factory Heartbeat",
+  "emotion": "Focus",
+  "world": "Robot Factory",
+  "story": "The rhythm of machines teaches precise movement.",
+  "background": "robot_factory",
+  "visual_effects": [
+    "sparks",
+    "steam"
+  ],
+  "platform_style": "metal",
+  "hazards": [],
+  "special_mechanic": "patrol_timing",
+  "difficulty": "normal",
+  "decorations": [
+    "robot_factory_silhouette",
+    "focus_motes"
+  ],
+  "lighting": "soft"
+}

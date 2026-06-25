@@ -1,0 +1,21 @@
+{
+  "level": 81,
+  "name": "Infinite Sky Journey",
+  "emotion": "Courage",
+  "world": "Infinite Starway",
+  "story": "The infinite sky turns courage into a playable memory.",
+  "background": "infinite_starway",
+  "visual_effects": [
+    "purple_particles",
+    "floating_lights"
+  ],
+  "platform_style": "ice",
+  "hazards": [],
+  "special_mechanic": "sliding_mechanics",
+  "difficulty": "expert",
+  "decorations": [
+    "infinite_sky_silhouette",
+    "courage_motes"
+  ],
+  "lighting": "dramatic"
+}

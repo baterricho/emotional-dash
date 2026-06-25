@@ -1,0 +1,21 @@
+{
+  "level": 6,
+  "name": "Snow Breath",
+  "emotion": "Calm",
+  "world": "Snow Meadow",
+  "story": "The world slows down so the heart can listen.",
+  "background": "snow_meadow",
+  "visual_effects": [
+    "snow",
+    "blue_mist"
+  ],
+  "platform_style": "ice",
+  "hazards": [],
+  "special_mechanic": "gentle_slides",
+  "difficulty": "easy",
+  "decorations": [
+    "snow_meadow_silhouette",
+    "calm_motes"
+  ],
+  "lighting": "soft"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 3,
+  "name": "Moonlit Promise",
+  "emotion": "Trust",
+  "world": "Moon Temple",
+  "story": "Moon stones teach the first rhythm of courage.",
+  "background": "moon_temple",
+  "visual_effects": [
+    "moon_dust",
+    "soft_fog"
+  ],
+  "platform_style": "stone",
+  "hazards": [],
+  "special_mechanic": "timed_jumps",
+  "difficulty": "easy",
+  "decorations": [
+    "moon_temple_silhouette",
+    "trust_motes"
+  ],
+  "lighting": "soft"
+}

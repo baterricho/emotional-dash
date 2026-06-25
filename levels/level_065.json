@@ -1,0 +1,21 @@
+{
+  "level": 65,
+  "name": "Garden of Apologies Journey",
+  "emotion": "Determination",
+  "world": "Garden of Apologies",
+  "story": "The garden of apologies turns determination into a playable memory.",
+  "background": "garden_of_apologies",
+  "visual_effects": [
+    "fire_particles",
+    "embers"
+  ],
+  "platform_style": "scorched",
+  "hazards": [],
+  "special_mechanic": "precision_jumps",
+  "difficulty": "hard",
+  "decorations": [
+    "garden_of_apologies_silhouette",
+    "determination_motes"
+  ],
+  "lighting": "dramatic"
+}

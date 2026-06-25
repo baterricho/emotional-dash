@@ -1,0 +1,21 @@
+{
+  "level": 29,
+  "name": "Echo Aquarium Journey",
+  "emotion": "Forgiveness",
+  "world": "Echo Aquarium",
+  "story": "The echo aquarium turns forgiveness into a playable memory.",
+  "background": "echo_aquarium",
+  "visual_effects": [
+    "petals",
+    "sun_rays"
+  ],
+  "platform_style": "corroded",
+  "hazards": [],
+  "special_mechanic": "basic_jump",
+  "difficulty": "normal",
+  "decorations": [
+    "echo_aquarium_silhouette",
+    "forgiveness_motes"
+  ],
+  "lighting": "soft"
+}

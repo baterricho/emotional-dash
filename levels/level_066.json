@@ -1,0 +1,21 @@
+{
+  "level": 66,
+  "name": "Meteor Library Journey",
+  "emotion": "Calm",
+  "world": "Meteor Library",
+  "story": "The meteor library turns calm into a playable memory.",
+  "background": "meteor_library",
+  "visual_effects": [
+    "sparkle",
+    "gold_motes"
+  ],
+  "platform_style": "ice",
+  "hazards": [],
+  "special_mechanic": "mastery_mix",
+  "difficulty": "hard",
+  "decorations": [
+    "meteor_library_silhouette",
+    "calm_motes"
+  ],
+  "lighting": "dramatic"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 75,
+  "name": "Mechanical Moon Journey",
+  "emotion": "Anxiety",
+  "world": "Mechanical Moon",
+  "story": "The mechanical moon turns anxiety into a playable memory.",
+  "background": "mechanical_moon",
+  "visual_effects": [
+    "fire_particles",
+    "embers"
+  ],
+  "platform_style": "divine",
+  "hazards": [],
+  "special_mechanic": "crumble_paths",
+  "difficulty": "hard",
+  "decorations": [
+    "mechanical_moon_silhouette",
+    "anxiety_motes"
+  ],
+  "lighting": "dramatic"
+}

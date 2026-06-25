@@ -1,0 +1,21 @@
+{
+  "level": 41,
+  "name": "Feather Bridge Journey",
+  "emotion": "Vulnerability",
+  "world": "Feather Bridge",
+  "story": "The feather bridge turns vulnerability into a playable memory.",
+  "background": "feather_bridge",
+  "visual_effects": [
+    "purple_particles",
+    "floating_lights"
+  ],
+  "platform_style": "glitch",
+  "hazards": [],
+  "special_mechanic": "randomized_rhythm",
+  "difficulty": "hard",
+  "decorations": [
+    "feather_bridge_silhouette",
+    "vulnerability_motes"
+  ],
+  "lighting": "dramatic"
+}

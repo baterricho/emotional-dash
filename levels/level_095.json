@@ -1,0 +1,21 @@
+{
+  "level": 95,
+  "name": "Upside-Down Port Journey",
+  "emotion": "Determination",
+  "world": "Upside-Down Port",
+  "story": "The upside-down port turns determination into a playable memory.",
+  "background": "upside_down_port",
+  "visual_effects": [
+    "fire_particles",
+    "embers"
+  ],
+  "platform_style": "scorched",
+  "hazards": [],
+  "special_mechanic": "sliding_mechanics",
+  "difficulty": "expert",
+  "decorations": [
+    "upside_down_port_silhouette",
+    "determination_motes"
+  ],
+  "lighting": "dramatic"
+}

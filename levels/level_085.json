@@ -1,0 +1,21 @@
+{
+  "level": 85,
+  "name": "Memory Arcade Journey",
+  "emotion": "Acceptance",
+  "world": "Memory Arcade",
+  "story": "The memory arcade turns acceptance into a playable memory.",
+  "background": "memory_arcade",
+  "visual_effects": [
+    "fire_particles",
+    "embers"
+  ],
+  "platform_style": "metal",
+  "hazards": [],
+  "special_mechanic": "basic_jump",
+  "difficulty": "expert",
+  "decorations": [
+    "memory_arcade_silhouette",
+    "acceptance_motes"
+  ],
+  "lighting": "dramatic"
+}

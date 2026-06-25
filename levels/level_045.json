@@ -1,0 +1,21 @@
+{
+  "level": 45,
+  "name": "Hope Observatory Journey",
+  "emotion": "Anxiety",
+  "world": "Hope Observatory",
+  "story": "The hope observatory turns anxiety into a playable memory.",
+  "background": "hope_observatory",
+  "visual_effects": [
+    "fire_particles",
+    "embers"
+  ],
+  "platform_style": "divine",
+  "hazards": [],
+  "special_mechanic": "dash_routes",
+  "difficulty": "hard",
+  "decorations": [
+    "hope_observatory_silhouette",
+    "anxiety_motes"
+  ],
+  "lighting": "dramatic"
+}

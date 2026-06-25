@@ -1,0 +1,21 @@
+{
+  "level": 30,
+  "name": "Inner Fear",
+  "emotion": "Fear",
+  "world": "Shadow Dimension",
+  "story": "The world bends around what the player has avoided.",
+  "background": "shadow_dimension",
+  "visual_effects": [
+    "dark_fog",
+    "glitch"
+  ],
+  "platform_style": "gore",
+  "hazards": [],
+  "special_mechanic": "fake_platforms",
+  "difficulty": "hard",
+  "decorations": [
+    "shadow_dimension_silhouette",
+    "fear_motes"
+  ],
+  "lighting": "dramatic"
+}

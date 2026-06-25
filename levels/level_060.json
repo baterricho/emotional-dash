@@ -1,0 +1,21 @@
+{
+  "level": 60,
+  "name": "Peace Within",
+  "emotion": "Calm",
+  "world": "Frozen Crystal Kingdom",
+  "story": "The player learns that stillness can be powerful.",
+  "background": "frozen_crystal_kingdom",
+  "visual_effects": [
+    "snow",
+    "crystal_sparks"
+  ],
+  "platform_style": "ice",
+  "hazards": [],
+  "special_mechanic": "sliding_mechanics",
+  "difficulty": "hard",
+  "decorations": [
+    "frozen_crystal_kingdom_silhouette",
+    "calm_motes"
+  ],
+  "lighting": "dramatic"
+}

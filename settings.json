@@ -1,0 +1,56 @@
+{
+  "difficulty": "normal",
+  "assist_mode": false,
+  "auto_dash": false,
+  "screen_shake": true,
+  "show_tutorial": true,
+  "resolution": "1280x720",
+  "fullscreen": false,
+  "pixel_art_mode": true,
+  "particle_quality": "high",
+  "background_effects": "high",
+  "brightness": 100,
+  "visual_effects": true,
+  "master_volume": 80,
+  "music_volume": 70,
+  "sfx_volume": 80,
+  "ambient_volume": 70,
+  "emotion_music": true,
+  "environment_sounds": true,
+  "controller_support": true,
+  "controller_vibration": true,
+  "color_mode": "normal",
+  "text_size": "medium",
+  "reduce_motion": false,
+  "flash_effects": true,
+  "subtitles": false,
+  "emotion_intensity": "medium",
+  "memory_mode": false,
+  "focus_mode": false,
+  "dream_mode": false,
+  "aura": "purple_dream",
+  "dash_effect": "shadow_trail",
+  "menu_theme": "dream_theme",
+  "keybinds": {
+    "left": [
+      "a",
+      "left"
+    ],
+    "right": [
+      "d",
+      "right"
+    ],
+    "jump": [
+      "space",
+      "up",
+      "w"
+    ],
+    "dash": [
+      "left shift",
+      "right shift"
+    ],
+    "skill": [
+      "e"
+    ]
+  }
+}

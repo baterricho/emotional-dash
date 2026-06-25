@@ -1,0 +1,21 @@
+{
+  "level": 83,
+  "name": "Soft Thunder Plains Journey",
+  "emotion": "Peace",
+  "world": "Soft Thunder Plains",
+  "story": "The soft thunder plains turns peace into a playable memory.",
+  "background": "soft_thunder_plains",
+  "visual_effects": [
+    "rain",
+    "blue_mist"
+  ],
+  "platform_style": "coral",
+  "hazards": [],
+  "special_mechanic": "randomized_rhythm",
+  "difficulty": "expert",
+  "decorations": [
+    "soft_thunder_plains_silhouette",
+    "peace_motes"
+  ],
+  "lighting": "dramatic"
+}

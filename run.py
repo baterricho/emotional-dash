@@ -8,6 +8,13 @@
 import math, random, sys, os, json, colorsys, time as _time
 import pygame
 from pygame import gfxdraw
+from src.sprite_animator import SpriteAnimator
+from src.levels.level_manager import LevelManager
+from src.settings.settings_manager import SettingsManager
+from src.story.emotion_system import EmotionSystem
+from src.emotion.emotion_profiles import get_emotion_profile
+from src.skills.skill_tree import SkillTree
+from src.world.world_events import WorldEventSystem
 
 pygame.init()
 MIXER_OK = True
@@ -19,7 +26,11 @@ except Exception:
 W, H   = 1280, 720
 FPS    = 60
 APP_NAME = "EmotionArchitect"
-SAVE_BASENAME = "ea_v5.json"
+SAVE_BASENAME = "save_data.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LEVEL_MANAGER = LevelManager()
+TOTAL_LEVELS = LEVEL_MANAGER.total_levels
+SETTINGS = SettingsManager(os.path.join(BASE_DIR, "settings.json"))
 
 def get_save_path():
     if sys.platform.startswith("win"):
@@ -78,14 +89,19 @@ def load_save():
             with open(SAVE, encoding="utf-8") as f: return json.load(f)
         except: pass
     return {"level":0,"best":0,"deaths":0,"runs":0,"coins":0,
-            "cleared":[False]*20,"best_times":[0]*20}
+            "cleared":[False]*TOTAL_LEVELS,"best_times":[0]*TOTAL_LEVELS,
+            "completed_levels":[],"stars":0,"emotions":[]}
 
 def save_game(d):
     with open(SAVE, "w", encoding="utf-8") as f: json.dump(d,f)
 
 SD = load_save()
-if "cleared" not in SD: SD["cleared"] = [False]*20
-if "best_times" not in SD: SD["best_times"] = [0]*20
+if "cleared" not in SD: SD["cleared"] = []
+if "best_times" not in SD: SD["best_times"] = []
+SD["cleared"] = (SD["cleared"] + [False]*TOTAL_LEVELS)[:TOTAL_LEVELS]
+SD["best_times"] = (SD["best_times"] + [0]*TOTAL_LEVELS)[:TOTAL_LEVELS]
+SD["level"] = clamp(SD.get("level", 0), 0, TOTAL_LEVELS-1) if "clamp" in globals() else min(max(SD.get("level", 0), 0), TOTAL_LEVELS-1)
+EMOTIONS = EmotionSystem(SD)
 
 # ═══════════════════════════════════════════════════════════════
 #  HELPERS
@@ -143,7 +159,7 @@ def circ(surf, color, pos, radius, alpha=255):
         except: pygame.draw.circle(surf,color,(x,y),r)
 
 # ═══════════════════════════════════════════════════════════════
-#  WORLD THEMES  (20 worlds, each fully unique)
+#  WORLD THEMES  (100 worlds, first 20 handcrafted then metadata-extended)
 # ═══════════════════════════════════════════════════════════════
 #  bg_top, bg_bot, plat_col, accent, enemy_col, fx_col, name,
 #  weather, fog_col, platform_style
@@ -209,6 +225,39 @@ WT = [
     ((10,10,16),(38,38,72),(195,195,215),(255,255,255),(225,225,245),(255,255,255),
      "TRANSCENDENCE","divine",(12,12,18),"divine"),
 ]
+
+def _extend_world_themes():
+    weather_map = {
+        "rain": "rain", "snow": "snow", "fire_particles": "embers",
+        "glowing_particles": "sparkle", "glitch": "glitch", "sand": "sand",
+        "bubbles": "bubbles", "petals": "leaves",
+    }
+    while len(WT) < TOTAL_LEVELS:
+        idx = len(WT)
+        meta = LEVEL_MANAGER.get_level(idx)
+        hue = (idx * 0.071 + len(meta["world"]) * 0.013) % 1.0
+        top = hsv(hue, 0.84, 0.16 + (idx % 5) * 0.025)
+        bot = hsv((hue + 0.08) % 1.0, 0.78, 0.34 + (idx % 7) * 0.025)
+        plat = hsv((hue + 0.15) % 1.0, 0.58, 0.68)
+        accent = hsv((hue + 0.28) % 1.0, 0.72, 1.0)
+        enemy = hsv((hue + 0.45) % 1.0, 0.75, 0.9)
+        fx = hsv((hue + 0.22) % 1.0, 0.58, 1.0)
+        weather = "sparkle"
+        for effect in meta.get("visual_effects", []):
+            if effect in weather_map:
+                weather = weather_map[effect]
+                break
+        fog = hsv(hue, 0.7, 0.12)
+        WT.append((top, bot, plat, accent, enemy, fx, meta["world"].upper(),
+                   weather, fog, meta.get("platform_style", "normal")))
+
+_extend_world_themes()
+
+def WTHEME(idx):
+    return WT[int(idx) % len(WT)]
+
+def level_meta(idx):
+    return LEVEL_MANAGER.get_level(max(0, min(int(idx), TOTAL_LEVELS-1)))
 
 MSGS = [
     "Welcome. Hope is the first thing you lose here.",
@@ -352,7 +401,7 @@ class PS:
         if len(self.pool)>self.mx: self.pool=self.pool[-self.mx:]
 
     def burst(self,x,y,count=24,color=(255,200,50),size=5,world=0):
-        wt=WT[world%20]
+        wt=WTHEME(world)
         self.emit(x,y,spread=8,count=count,life=55,color=color,size=size,grav=0.14,shape="circle")
         self.emit(x,y,spread=6,count=count//2,life=42,color=wt[5],size=size//2,grav=0.07,shape="spark")
         self.emit(x,y,spread=4,count=count//3,life=36,color=(255,255,255),size=2,grav=0.04,shape="ring")
@@ -373,7 +422,7 @@ class Weather:
         self.t=0
 
     def update_emit(self, world_idx):
-        wtype=WT[world_idx%20][7]
+        wtype=WTHEME(world_idx)[7]
         self.t+=1
         if wtype=="none": return
         if wtype=="leaves" and self.t%5==0:
@@ -409,7 +458,7 @@ class Weather:
                                "life":random.randint(40,90),"ml":90,"type":wtype,"c":c,"s":random.randint(1,3),"rot":0,"rspd":0})
         elif wtype=="sparks" and self.t%4==0:
             x=random.randint(0,W); y=random.randint(H//2,H)
-            c=WT[world_idx%20][5]
+            c=WTHEME(world_idx)[5]
             self.drops.append({"x":float(x),"y":float(y),"vx":random.uniform(-3,3),
                                "vy":random.uniform(-3,-0.5),"life":random.randint(20,45),"ml":45,
                                "type":wtype,"c":c,"s":random.randint(1,3),"rot":0,"rspd":0})
@@ -427,7 +476,7 @@ class Weather:
                                "type":wtype,"c":c,"s":random.randint(2,4),"rot":0,"rspd":0})
         elif wtype=="crystal" and self.t%8==0:
             x=random.randint(0,W); y=random.randint(0,H)
-            c=WT[world_idx%20][5]
+            c=WTHEME(world_idx)[5]
             self.drops.append({"x":float(x),"y":float(y),"vx":random.uniform(-1,1),
                                "vy":random.uniform(-1,1),"life":random.randint(30,60),"ml":60,
                                "type":wtype,"c":c,"s":random.randint(3,7),"rot":random.uniform(0,6.28),"rspd":0.1})
@@ -445,7 +494,7 @@ class Weather:
                                "type":wtype,"c":c,"s":random.randint(1,3),"rot":0,"rspd":0})
         elif wtype=="glitch" and self.t%6==0:
             x=random.randint(0,W); y=random.randint(0,H)
-            c=WT[world_idx%20][5]
+            c=WTHEME(world_idx)[5]
             self.drops.append({"x":float(x),"y":float(y),"vx":random.uniform(-5,5),
                                "vy":random.uniform(-2,2),"life":random.randint(8,18),"ml":18,
                                "type":wtype,"c":c,"s":random.randint(1,3),"rot":0,"rspd":0})
@@ -726,7 +775,7 @@ class Platform:
         self.boost=boost
         self.prev_rect=pygame.Rect(x,y,w,h)
         self.world_idx=world_idx
-        self.style=WT[world_idx%20][9]
+        self.style=WTHEME(world_idx)[9]
         self.crack_pts=[(random.randint(8,max(9,w-8)),random.randint(2,max(3,h-2))) for _ in range(5)]
         # Moving path trail points
         self.path_pts=[]
@@ -751,7 +800,7 @@ class Platform:
             if self.crumble_timer>40: self.visible=False
 
     def draw(self, surf, tick):
-        wt=WT[self.world_idx%20]
+        wt=WTHEME(self.world_idx)
         accent=wt[3]
 
         if not self.visible:
@@ -1043,7 +1092,7 @@ class Enemy:
     def draw(self, surf, tick):
         if not self.alive: return
         pulse=(math.sin(tick*0.1)+1)/2
-        wt=WT[self.world_idx%20]
+        wt=WTHEME(self.world_idx)
         hurt_f=self.hurt_t/8
 
         # Warning ring for shooter
@@ -1087,7 +1136,7 @@ class Portal:
 
     def update(self):
         self.t+=0.05
-        wt=WT[self.world_idx%20]
+        wt=WTHEME(self.world_idx)
         for i in range(3):
             a=self.t+i*math.tau/3
             ppx=self.x+math.cos(a)*(self.r+10)
@@ -1096,7 +1145,7 @@ class Portal:
 
     def draw(self, surf):
         pulse=(math.sin(self.t*2)+1)/2
-        wt=WT[self.world_idx%20]
+        wt=WTHEME(self.world_idx)
         # Multi-layer corona
         for ring in range(7,0,-1):
             a=max(0,48-ring*6)
@@ -1112,8 +1161,28 @@ class Portal:
                   (255,255,180),F_TINY,center=True)
 
 # ═══════════════════════════════════════════════════════════════
-#  PLAYER  (3D sphere, squish/stretch, speed lines, double-jump)
+#  PLAYER  (sprite character, squish/stretch, speed lines, double-jump)
 # ═══════════════════════════════════════════════════════════════
+PLAYER_SPRITE_PATH = os.path.join(BASE_DIR, "assets", "sprites", "player", "character_sheet.png")
+PLAYER_FRAME_W = 96
+PLAYER_FRAME_H = 80
+PLAYER_VISUAL_SCALE = 0.7
+SPIKE_HAZARDS_ENABLED = False
+
+def sprite_row(row, count):
+    return [(i * PLAYER_FRAME_W, row * PLAYER_FRAME_H, PLAYER_FRAME_W, PLAYER_FRAME_H)
+            for i in range(count)]
+
+PLAYER_ANIMATIONS = {
+    "idle": sprite_row(0, 4),
+    "walk": sprite_row(1, 8),
+    "dash": sprite_row(2, 6),
+    "jump": sprite_row(3, 6),
+    "fall": sprite_row(4, 1),
+    "land": sprite_row(5, 2),
+    "hit": sprite_row(6, 3),
+}
+
 class Player:
     SIZE    = 22
     GRAVITY = 0.52
@@ -1133,7 +1202,12 @@ class Player:
         self.trail=[]; self.t=0
         self.dash_t=0; self.dashing=False; self.dash_dir=1; self.dashing_t=0
         self.invincible=0; self.world_idx=0
-        self.roll_angle=0.0
+        self.facing=1
+        self.anim_state="idle"
+        self.land_anim_t=0
+        self.hit_anim_t=0
+        self.sprite=SpriteAnimator(PLAYER_SPRITE_PATH, PLAYER_ANIMATIONS,
+                                   frame_duration=5, scale=1)
         # Squish/stretch
         self.sq_x=1.0; self.sq_y=1.0
         # Double jump
@@ -1141,52 +1215,87 @@ class Player:
         # Speed lines
         self.speed_lines=[]  # [(x,y,len,alpha)]
 
-    def spawn(self,x,y):
+    def spawn(self,x,y,hit=False):
         self.rect.x,self.rect.y=x,y
         self.vx=self.vy=0.0; self.on_ground=False
         self.coyote_t=0; self.jbuffer_t=0
         self.dash_t=0; self.dashing=False
         self.invincible=60; self.trail.clear()
         self.sq_x=1.0; self.sq_y=1.0; self.jumps_left=2
+        self.anim_state="hit" if hit else "idle"
+        self.land_anim_t=0
+        self.hit_anim_t=18 if hit else 0
 
     def _squish(self,sx,sy):
         self.sq_x=sx; self.sq_y=sy
 
-    def update(self, platforms, dx, jump, dash):
+    def hit(self):
+        self.hit_anim_t=18
+        self.anim_state="hit"
+
+    def _choose_animation(self):
+        if self.hit_anim_t>0:
+            return "hit"
+        if self.land_anim_t>0:
+            return "land"
+        if self.dashing:
+            return "dash"
+        if not self.on_ground and self.vy < -1.2:
+            return "jump"
+        if not self.on_ground and self.vy > 1.2:
+            return "fall"
+        if abs(self.vx)>0.2:
+            return "walk"
+        return "idle"
+
+    def update(self, platforms, dx, jump, dash, emotion_profile=None, skills=None):
+        emotion_profile = emotion_profile or {}
+        skills = skills or SkillTree()
         self.t+=1
         if self.invincible>0: self.invincible-=1
         if self.dash_t>0: self.dash_t-=1
+        if self.land_anim_t>0: self.land_anim_t-=1
+        if self.hit_anim_t>0: self.hit_anim_t-=1
 
         # Restore squish
         self.sq_x=lerp(self.sq_x,1.0,0.20)
         self.sq_y=lerp(self.sq_y,1.0,0.20)
 
-        # Roll
-        self.roll_angle+=dx*0.16
+        if dx>0.05: self.facing=1
+        elif dx<-0.05: self.facing=-1
 
-        wt=WT[self.world_idx%20]
+        wt=WTHEME(self.world_idx)
 
         # ── DASH ───────────────────────────────────────────────
         if dash and self.dash_t==0 and not self.dashing:
             self.dashing=True; self.dash_dir=1 if dx>=0 else -1
-            self.dashing_t=self.DASH_DUR; self.dash_t=35; self.vy*=0.3
+            self.dashing_t=self.DASH_DUR
+            self.dash_t=28 if skills.has("power_dash") else 35
+            self.vy*=0.3
             play(SND_DASH)
             self._squish(1.6,0.5)
             ps.emit(self.rect.centerx,self.rect.centery,
-                    count=16,life=20,color=wt[5],size=5,spread=3,grav=0,shape="spark")
+                    count=16,life=20,color=(166,88,255),size=5,spread=3,grav=0,shape="spark")
 
         if self.dashing:
             self.dashing_t-=1
-            self.vx=self.dash_dir*self.DASH_V
+            dash_power=emotion_profile.get("dash_power",1.0) * (1.18 if skills.has("power_dash") else 1.0)
+            self.vx=self.dash_dir*self.DASH_V*dash_power
+            self.facing=self.dash_dir
+            if self.t%2==0:
+                ps.emit(self.rect.centerx-self.dash_dir*9,self.rect.centery+2,
+                        vx=-self.dash_dir*1.8,vy=0,count=3,life=18,
+                        color=(166,88,255),size=4,spread=1.5,grav=0,shape="spark")
             if self.dashing_t<=0: self.dashing=False
 
-        if not self.dashing: self.vx=dx*self.SPEED
+        if not self.dashing:
+            self.vx=dx*self.SPEED*emotion_profile.get("movement",1.0)
 
         # ── COYOTE / JUMP BUFFER ───────────────────────────────
         was_grounded=self.on_ground
         if was_grounded:
             self.coyote_t=self.COYOTE
-            self.jumps_left=2
+            self.jumps_left=2 + emotion_profile.get("extra_jumps",0)
         elif self.coyote_t>0: self.coyote_t-=1
 
         if jump: self.jbuffer_t=self.JBUFFER
@@ -1195,14 +1304,14 @@ class Player:
         # ── JUMP (with double-jump) ────────────────────────────
         if self.jbuffer_t>0:
             if self.coyote_t>0:  # ground/coyote jump
-                self.vy=self.JUMP; self.coyote_t=0; self.jbuffer_t=0
+                self.vy=self.JUMP*emotion_profile.get("jump",1.0); self.coyote_t=0; self.jbuffer_t=0
                 self.jumps_left=max(0,self.jumps_left-1)
                 play(SND_JUMP)
                 self._squish(0.7,1.4)
                 ps.emit(self.rect.centerx,self.rect.bottom,
                         count=14,life=24,color=wt[5],size=4,spread=4,grav=-0.05)
             elif self.jumps_left>0 and not was_grounded:  # double jump
-                self.vy=self.JUMP2; self.jbuffer_t=0
+                self.vy=self.JUMP2*emotion_profile.get("jump",1.0); self.jbuffer_t=0
                 self.jumps_left-=1
                 play(SND_DJUMP)
                 self._squish(1.3,0.65)
@@ -1214,7 +1323,7 @@ class Player:
                             count=1,life=22,color=wt[5],size=3,spread=1,grav=0,shape="ring")
 
         # ── GRAVITY ───────────────────────────────────────────
-        if not self.dashing: self.vy+=self.GRAVITY
+        if not self.dashing: self.vy+=self.GRAVITY*emotion_profile.get("gravity",1.0)
         self.vy=clamp(self.vy,-20,18)
 
         # ── COLLIDE ───────────────────────────────────────────
@@ -1227,14 +1336,18 @@ class Player:
 
         if landed and not was_grounded and abs(self.vy)>3:
             play(SND_LAND)
+            self.land_anim_t=10
             self._squish(1.35,0.6)
             ps.emit(self.rect.centerx,self.rect.bottom,
                     count=10,life=18,color=wt[5],size=3,spread=3,grav=0.07)
 
-        # Trail
-        tc=hsv(self.t*0.006%1,0.9,1.0)
-        self.trail.append((self.rect.centerx,self.rect.centery,tc,self.sq_x,self.sq_y))
-        if len(self.trail)>28: self.trail.pop(0)
+        # Sprite afterimages during high-speed movement.
+        if self.dashing:
+            self.trail.append((self.rect.centerx,self.rect.bottom+4,self.facing,self.sq_x,self.sq_y))
+            if len(self.trail)>8: self.trail.pop(0)
+        elif self.trail:
+            self.trail=self.trail[-6:]
+            self.trail.pop(0)
 
         # Speed lines (when moving fast)
         spd=abs(self.vx)
@@ -1245,6 +1358,8 @@ class Player:
                 ln=int(spd*2.5+random.randint(5,15))
                 self.speed_lines.append([lx,ly,ln,200])
         self.speed_lines=[[l[0],l[1],l[2],max(0,l[3]-18)] for l in self.speed_lines if l[3]>0]
+        self.anim_state=self._choose_animation()
+        self.sprite.update(self.anim_state)
 
     def _res_x(self, platforms):
         for p in platforms:
@@ -1264,7 +1379,7 @@ class Player:
                     if p.crumble and not p.crumbling: p.crumbling=True
                     if p.boost:
                         self.vy=-20; play(SND_BOOST)
-                        wt=WT[self.world_idx%20]
+                        wt=WTHEME(self.world_idx)
                         ps.burst(self.rect.centerx,self.rect.bottom,
                                  count=20,color=(100,255,100),world=self.world_idx)
                         self._squish(0.5,1.6)
@@ -1280,7 +1395,8 @@ class Player:
         return False
 
     def draw(self, surf):
-        wt=WT[self.world_idx%20]
+        wt=WTHEME(self.world_idx)
+        profile=get_emotion_profile(level_meta(self.world_idx)["emotion"])
 
         # Speed lines behind player
         face=-self.dash_dir if self.dashing else (-1 if self.vx<-2 else 1)
@@ -1289,27 +1405,18 @@ class Player:
             lx2=sl[0]+face*sl[2]
             pygame.draw.line(surf,(*wt[5],a),(sl[0],sl[1]),(lx2,sl[1]),1)
 
-        # Trail (mini 3D balls)
-        for i,(tx,ty,tc,tsx,tsy) in enumerate(self.trail):
-            t=i/len(self.trail)
-            if t<0.15: continue
-            ts=max(2,int((self.SIZE//2)*t*0.65))
-            draw_sphere(surf,tx,ty,ts,tc,self.t,shadow=False,pulse_t=t*0.25,
-                        squish_x=lerp(1.0,tsx,t*0.3),squish_y=lerp(1.0,tsy,t*0.3))
+        # Sprite afterimage trail, replacing the old mini-ball trail.
+        for i,(tx,ty,tf,tsx,tsy) in enumerate(self.trail):
+            t=(i+1)/max(1,len(self.trail))
+            self.sprite.draw(surf,(tx,ty),facing=tf,
+                             squash=(lerp(1.0,tsx,t*0.2)*PLAYER_VISUAL_SCALE,
+                                      lerp(1.0,tsy,t*0.2)*PLAYER_VISUAL_SCALE),
+                             alpha=int(30+60*t))
 
         if self.invincible>0 and (self.invincible//4)%2==1: return
 
         cx=self.rect.centerx; cy=self.rect.centery
         r=self.SIZE//2
-        base_c=hsv(self.t*0.006%1,0.88,1.0)
-
-        # Dash ghost copies
-        if self.dashing:
-            for i in range(4):
-                gx=cx-self.dash_dir*(i+1)*10
-                gc=lerpC(base_c,(0,0,0),i*0.2)
-                draw_sphere(surf,gx,cy,max(2,r-i*2),gc,self.t,
-                            shadow=False,pulse_t=0,squish_x=self.sq_x,squish_y=self.sq_y)
 
         # Double jump indicator ring
         if self.jumps_left>=1 and not self.on_ground:
@@ -1319,26 +1426,27 @@ class Player:
             pygame.draw.circle(js,jc,(jr+2,jr+2),jr,2)
             surf.blit(js,(cx-jr-2,cy-jr-2))
 
-        # Armor ring
-        ar=r+5+int(math.sin(self.t*0.08)*2)
-        as2=pygame.Surface((ar*2+4,ar*2+4),pygame.SRCALPHA)
-        pygame.draw.circle(as2,(*wt[3],90),(ar+2,ar+2),ar,2)
-        surf.blit(as2,(cx-ar-2,cy-ar-2))
+        # Ground shadow under the character.
+        sh=pygame.Surface((32,9),pygame.SRCALPHA)
+        pygame.draw.ellipse(sh,(0,0,0,72),(0,0,32,9))
+        surf.blit(sh,(cx-16,self.rect.bottom-1))
 
-        # Main 3D sphere with squish
-        draw_sphere(surf,cx,cy,r,base_c,self.t,
-                    emissive=True,emissive_color=wt[3],
-                    shadow=True,pulse_t=(math.sin(self.t*0.1)+1)/2*0.3,
-                    squish_x=self.sq_x,squish_y=self.sq_y)
+        mood=profile.get("mood","balanced")
+        breathe=1.0
+        if self.anim_state=="idle":
+            breathe=1.0+math.sin(self.t*0.08)*0.035
+            if self.t%180==0:
+                ps.emit(cx+self.facing*8,self.rect.y+4,count=2,life=35,color=wt[5],size=2,spread=0.4,grav=-0.01)
+        if mood=="nervous" and self.t%28==0:
+            ps.emit(cx,self.rect.y+8,count=1,life=22,color=(130,90,210),size=2,spread=0.8,grav=-0.02)
+        elif mood=="energetic" and self.t%16==0:
+            ps.emit(cx,self.rect.bottom-8,count=1,life=24,color=wt[3],size=2,spread=0.8,grav=-0.01,shape="spark")
 
-        # Rotation stripe
-        sa=self.roll_angle
-        sx=cx+int(math.cos(sa)*r*0.72); sy=cy+int(math.sin(sa)*r*0.72)
-        sx2=cx+int(math.cos(sa+math.pi)*r*0.72); sy2=cy+int(math.sin(sa+math.pi)*r*0.72)
-        ss=pygame.Surface((r*2,r*2),pygame.SRCALPHA)
-        pygame.draw.line(ss,(*lerpC(base_c,(255,255,255),0.55),115),
-            (sx-cx+r,sy-cy+r),(sx2-cx+r,sy2-cy+r),2)
-        surf.blit(ss,(cx-r,cy-r))
+        aura_r=18+int(math.sin(self.t*0.05)*2)
+        pygame.draw.circle(surf,(*wt[3],32),(cx,self.rect.centery),aura_r,1)
+        self.sprite.draw(surf,(cx,self.rect.bottom+4),facing=self.facing,
+                         squash=(self.sq_x*PLAYER_VISUAL_SCALE,
+                                  self.sq_y*PLAYER_VISUAL_SCALE*breathe))
 
         # Dash ready indicator
         if self.dash_t==0:
@@ -1365,7 +1473,7 @@ class Background:
         self._fog_cache={}
 
     def _gen_parallax(self, world_idx):
-        wt=WT[world_idx%20]
+        wt=WTHEME(world_idx)
         self.parallax=[]
         # Layer 1: far (slowest scroll)
         for _ in range(14):
@@ -1384,7 +1492,10 @@ class Background:
         self.t+=1
         if self.last_world!=idx:
             self._gen_parallax(idx); self.last_world=idx
-        wt=WT[idx%20]
+        wt=WTHEME(idx)
+        meta=level_meta(idx)
+        profile=get_emotion_profile(meta["emotion"])
+        events=WorldEventSystem(meta)
         c1,c2=wt[0],wt[1]
 
         # Gradient sky
@@ -1441,9 +1552,29 @@ class Background:
         # Scanlines
         surf.blit(self.scanlines,(0,0))
 
+        if profile.get("visibility",1.0) < 0.9:
+            darkness=int((1.0-profile["visibility"])*150)
+            shade=pygame.Surface((W,H),pygame.SRCALPHA)
+            shade.fill((0,0,0,darkness))
+            pygame.draw.circle(shade,(0,0,0,0),(W//2,H//2),260)
+            surf.blit(shade,(0,0))
+
+        if events.event_flags().get("fog"):
+            fog=pygame.Surface((W,H),pygame.SRCALPHA)
+            for i in range(7):
+                fy=int((self.t*0.25+i*95)%H)
+                pygame.draw.ellipse(fog,(*wt[8],34),(-120+i*210,fy,360,70))
+            surf.blit(fog,(0,0))
+
+        if events.has_major_challenge:
+            pulse=(math.sin(self.t*0.045)+1)/2
+            ring=pygame.Surface((W,H),pygame.SRCALPHA)
+            pygame.draw.rect(ring,(*wt[3],int(25+pulse*32)),(0,0,W,H),8)
+            surf.blit(ring,(0,0))
+
     def _draw_world_art(self, surf, idx):
         t=self.t
-        wt=WT[idx%20]
+        wt=WTHEME(idx)
         if idx==1:  # Forest — tree silhouettes
             for i in range(13):
                 tx=i*(W//13)+30; h=int(80+20*math.sin(i*1.3))
@@ -1513,13 +1644,18 @@ bg = Background()
 # ═══════════════════════════════════════════════════════════════
 def mk_P(x,y,w,h,wi,deadly=False,moving=False,mx=0,my=0,
          mrange=100,mspeed=1.5,phase=False,phase_time=90,crumble=False,boost=False):
-    wt=WT[wi%20]
+    wt=WTHEME(wi)
+    if deadly and not SPIKE_HAZARDS_ENABLED:
+        p=Platform(x,y,w,h,wt[2],False,moving,mx,my,mrange,mspeed,
+                   phase,phase_time,crumble,boost,wi)
+        p.visible=False
+        return p
     c=(195,22,22) if deadly else wt[2]
     return Platform(x,y,w,h,c,deadly,moving,mx,my,mrange,mspeed,
                     phase,phase_time,crumble,boost,wi)
 
 def mk_E(x,y,etype,speed,wi,**kw):
-    wt=WT[wi%20]
+    wt=WTHEME(wi)
     return Enemy(x,y,etype,wt[4],speed=speed,world_idx=wi,**kw)
 
 def build_level(idx):
@@ -1757,7 +1893,7 @@ def build_level(idx):
 #  HUD  (world-tinted, combo display, dash, lives as 3D spheres)
 # ═══════════════════════════════════════════════════════════════
 def draw_hud(surf, idx, lives, tick, coins_total, coins_got, combo, dash_t, time_elapsed):
-    wt=WT[idx%20]
+    wt=WTHEME(idx)
     acc=wt[3]
 
     # Top bar
@@ -1787,15 +1923,21 @@ def draw_hud(surf, idx, lives, tick, coins_total, coins_got, combo, dash_t, time
     # World title
     name=MSGS[idx] if idx<len(MSGS) else "???"
     tc=hsv(tick*0.004%1,0.7,1.0)
-    wname=WT[idx%20][6]
-    draw_text(surf,f"WORLD {idx+1:02d}/20  ·  {wname}",(W//2,7),acc,F_MD,center=True)
-    draw_text(surf,name,(W//2,33),(175,185,215),F_TINY,center=True)
+    meta=level_meta(idx)
+    wname=meta["world"]
+    draw_text(surf,f"WORLD {idx+1:03d}/{TOTAL_LEVELS}  ·  {wname}",(W//2,7),acc,F_MD,center=True)
+    draw_text(surf,f"{meta['name']} · {meta['emotion']}",(W//2,33),(175,185,215),F_TINY,center=True)
+    event=WorldEventSystem(meta)
+    if event.has_major_challenge:
+        draw_text(surf,event.challenge_name,(W//2,50),lerpC(acc,(255,255,255),0.35),F_TINY,center=True)
 
     # Stats
     draw_text(surf,f"BEST: W{SD['best']+1}",(24,7),(155,165,235),F_TINY)
     draw_text(surf,f"DEATHS: {SD['deaths']}",(24,24),(215,95,95),F_TINY)
     cc=lerpC(acc,(255,255,200),0.3)
     draw_text(surf,f"◆ {coins_got}/{coins_total}",(24,41),cc,F_TINY)
+    skills=SkillTree(SD.get("emotions", [])).describe()
+    draw_text(surf,f"SKILLS: {skills}",(24,58),(110,125,175),F_XS)
 
     # Timer
     ts=int(time_elapsed)
@@ -1851,7 +1993,8 @@ class WorldIntroCard:
     def draw(self, surf):
         if not self.active: return
         t=self.timer/90
-        wt=WT[self.world_idx%20]
+        wt=WTHEME(self.world_idx)
+        meta=level_meta(self.world_idx)
         # Fade in/out
         if self.timer>75: a=int(255*(90-self.timer)/15)
         elif self.timer<18: a=int(255*self.timer/18)
@@ -1877,12 +2020,12 @@ class WorldIntroCard:
         num_s.set_alpha(a)
         surf.blit(num_s,(W//2-num_s.get_width()//2,H//2-56))
 
-        name_s=outlined(wt[6],F_TITLE,
+        name_s=outlined(meta["world"].upper(),F_TITLE,
                          lerpC(wt[3],(255,255,255),0.3),(0,0,0),4)
         name_s.set_alpha(a)
         surf.blit(name_s,(W//2-name_s.get_width()//2,H//2-22))
 
-        msg_s=F_SUB.render(MSGS[self.world_idx] if self.world_idx<len(MSGS) else "..."
+        msg_s=F_SUB.render(meta.get("story") or (MSGS[self.world_idx] if self.world_idx<len(MSGS) else "...")
                             ,True,lerpC(wt[3],(255,255,255),0.6))
         msg_s.set_alpha(a)
         surf.blit(msg_s,(W//2-msg_s.get_width()//2,H//2+76))
@@ -1927,7 +2070,7 @@ def draw_edge_indicators(surf, enemies, tick):
 # ═══════════════════════════════════════════════════════════════
 def draw_pause(surf, world_idx):
     t=pygame.time.get_ticks()/1000.0
-    wt=WT[world_idx%20]
+    wt=WTHEME(world_idx)
     ov=pygame.Surface((W,H),pygame.SRCALPHA)
     ov.fill((0,0,0,175))
     surf.blit(ov,(0,0))
@@ -1961,12 +2104,13 @@ def draw_pause(surf, world_idx):
     btns=[]
     btn_data=[
         ("▶  RESUME",    wt[3],          (0,0,0)),
+        ("⚙  SETTINGS",  (120,170,255),  (0,0,0)),
         ("↺  RESTART",   (220,100,100),  (0,0,0)),
         ("⌂  MAIN MENU", (150,150,180),  (0,0,0)),
     ]
     for i,(label,fc,tc2) in enumerate(btn_data):
         bw=300; bh=50
-        bx2=W//2-bw//2; by2=ppy+150+i*68
+        bx2=W//2-bw//2; by2=ppy+134+i*58
         btn_r=pygame.Rect(bx2,by2,bw,bh)
         # Glow
         for ring in range(3,0,-1):
@@ -1987,13 +2131,62 @@ def draw_pause(surf, world_idx):
                      True,(120,130,160))
     surf.blit(st,(W//2-st.get_width()//2,ppy+ph-30))
 
-    return btns  # [resume, restart, menu]
+    return btns  # [resume, settings, restart, menu]
+
+def draw_settings_screen(surf):
+    t=pygame.time.get_ticks()/1000.0
+    theme=SETTINGS.get("menu_theme")
+    base=(16,4,32) if theme!="bright_theme" else (10,22,34)
+    accent=(166,88,255) if SETTINGS.get("aura")=="purple_dream" else (90,180,255)
+    for y in range(H):
+        surf.fill(lerpC(base,(4,2,12),y/H),(0,y,W,1))
+    for i in range(7):
+        x=int((i*191+t*18)%W)
+        y=int(80+i*72+math.sin(t+i)*18)
+        circ(surf,accent,(x,y),3+i%3,90)
+
+    title=outlined("EMOTIONAL SETTINGS",F_XL,accent,(0,0,0),3)
+    surf.blit(title,(W//2-title.get_width()//2,34))
+    draw_text(surf,"Customize how you experience emotions, memories, and worlds.",
+              (W//2,102),(190,190,230),F_SUB,center=True)
+
+    panel=pygame.Surface((980,455),pygame.SRCALPHA)
+    panel.fill((5,6,18,215))
+    pygame.draw.rect(panel,(*accent,120),(0,0,980,455),2,border_radius=12)
+    surf.blit(panel,(150,145))
+
+    rows=[
+        ("Gameplay", f"Difficulty: {SETTINGS.get('difficulty').upper()}   Assist: {'ON' if SETTINGS.get('assist_mode') else 'OFF'}   Auto Dash: {'ON' if SETTINGS.get('auto_dash') else 'OFF'}"),
+        ("Graphics", f"Pixel Art: {'ON' if SETTINGS.get('pixel_art_mode') else 'OFF'}   Particles: {SETTINGS.get('particle_quality').upper()}   Background: {SETTINGS.get('background_effects').upper()}"),
+        ("Audio", f"Master {SETTINGS.get('master_volume')}   Music {SETTINGS.get('music_volume')}   SFX {SETTINGS.get('sfx_volume')}   Emotion Music: {'ON' if SETTINGS.get('emotion_music') else 'OFF'}"),
+        ("Controls", "A/Left Move Left   D/Right Move Right   Space Jump   Shift Dash   E Skill"),
+        ("Accessibility", f"Color: {SETTINGS.get('color_mode')}   Text: {SETTINGS.get('text_size')}   Reduce Motion: {'ON' if SETTINGS.get('reduce_motion') else 'OFF'}   Flash: {'ON' if SETTINGS.get('flash_effects') else 'OFF'}"),
+        ("Data", f"Completed: {sum(1 for x in SD['cleared'] if x)}/{TOTAL_LEVELS}   Stars: {SD.get('stars',0)}/300   Emotions: {len(SD.get('emotions',[]))}/10"),
+        ("Your Journey", f"Intensity: {SETTINGS.get('emotion_intensity').upper()}   Focus: {'ON' if SETTINGS.get('focus_mode') else 'OFF'}   Dream: {'ON' if SETTINGS.get('dream_mode') else 'OFF'}   Aura: {SETTINGS.get('aura').replace('_',' ').title()}"),
+    ]
+    for i,(heading,body) in enumerate(rows):
+        y=170+i*58
+        draw_text(surf,heading,(190,y),accent,F_MD)
+        draw_text(surf,body,(370,y+4),(205,210,235),F_TINY)
+
+    hint="1 Difficulty  2 Assist  3 Auto Dash  4 Shake  5 Focus  6 Dream  7 Aura  8 Particles  9 Intensity"
+    draw_text(surf,hint,(W//2,622),(150,160,210),F_TINY,center=True)
+    back=pygame.Rect(W//2-120,655,240,42)
+    pygame.draw.rect(surf,lerpC(accent,(0,0,0),0.45),back,border_radius=10)
+    pygame.draw.rect(surf,(*accent,150),back,1,border_radius=10)
+    draw_text(surf,"BACK",(back.centerx,back.y+10),(255,255,255),F_MD,center=True)
+    return back
+
+def cycle_setting(key, values):
+    cur=SETTINGS.get(key)
+    idx=values.index(cur) if cur in values else 0
+    SETTINGS.set(key, values[(idx+1)%len(values)])
 
 # ═══════════════════════════════════════════════════════════════
-#  WORLD PROGRESS RING  (shown on menu, 20 segments)
+#  WORLD PROGRESS RING  (shown on menu)
 # ═══════════════════════════════════════════════════════════════
 def draw_progress_ring(surf, cx, cy, r_out, r_in, tick):
-    n=20
+    n=TOTAL_LEVELS
     for i in range(n):
         a1=i*(math.tau/n)-math.tau/4
         a2=(i+0.88)*(math.tau/n)-math.tau/4
@@ -2076,7 +2269,7 @@ def draw_menu(surf, idx, tick):
     # World progress ring
     draw_progress_ring(surf, W//2, H//2+88, 52, 36, tick)
     cleared=sum(1 for x in SD["cleared"] if x)
-    cr=F_SM.render(f"{cleared}/20 CLEARED",True,(180,180,220))
+    cr=F_SM.render(f"{cleared}/{TOTAL_LEVELS} CLEARED",True,(180,180,220))
     surf.blit(cr,(W//2-cr.get_width()//2,H//2+148))
 
     # Stats panel
@@ -2084,7 +2277,7 @@ def draw_menu(surf, idx, tick):
     panel2=pygame.Surface((pw2,ph2),pygame.SRCALPHA); panel2.fill((255,255,255,5))
     pygame.draw.rect(panel2,(*hsv((t*0.04)%1,0.7,0.9),72),(0,0,pw2,ph2),2,border_radius=10)
     surf.blit(panel2,(ppx2,ppy2))
-    stats=[(f"⬡ WORLD {idx+1:02d}/20",(140,255,180)),(f"★ BEST W{SD['best']+1}",(255,220,100)),
+    stats=[(f"⬡ WORLD {idx+1:03d}/{TOTAL_LEVELS}",(140,255,180)),(f"★ BEST W{SD['best']+1}",(255,220,100)),
            (f"✦ DEATHS {SD['deaths']}",(255,110,110)),(f"◆ COINS {SD['coins']}",(255,200,60))]
     cw2=pw2//4
     for i2,(lb2,col2) in enumerate(stats):
@@ -2093,7 +2286,9 @@ def draw_menu(surf, idx, tick):
     surf.blit(rt2,(W//2-rt2.get_width()//2,ppy2+54))
 
     # Play button
-    btn=pygame.Rect(W//2-162,476,324,62); btn_rst=pygame.Rect(W//2-122,552,244,40)
+    btn=pygame.Rect(W//2-162,468,324,58)
+    btn_set=pygame.Rect(W//2-122,538,244,38)
+    btn_rst=pygame.Rect(W//2-122,590,244,38)
     for ring in range(6,0,-1):
         gs2=pygame.Surface((btn.w+ring*14,btn.h+ring*10),pygame.SRCALPHA)
         pygame.draw.rect(gs2,(*hsv((t*0.07)%1,0.9,1.0),18),(0,0,btn.w+ring*14,btn.h+ring*10),border_radius=18)
@@ -2104,6 +2299,10 @@ def draw_menu(surf, idx, tick):
     pygame.draw.rect(surf,(255,255,255),btn,2,border_radius=14)
     pl=outlined("▶   TRANSCEND NOW",F_LG,(10,10,10),(255,255,255),2)
     surf.blit(pl,(btn.centerx-pl.get_width()//2,btn.centery-pl.get_height()//2))
+    pygame.draw.rect(surf,(16,26,58),btn_set,border_radius=8)
+    pygame.draw.rect(surf,(78,112,185),btn_set,1,border_radius=8)
+    sl=F_SUB.render("⚙  EMOTIONAL SETTINGS",True,(140,175,255))
+    surf.blit(sl,(btn_set.centerx-sl.get_width()//2,btn_set.centery-sl.get_height()//2))
     pygame.draw.rect(surf,(35,12,12),btn_rst,border_radius=8)
     pygame.draw.rect(surf,(100,35,35),btn_rst,1,border_radius=8)
     rl=F_SUB.render("↺  RESET ALL PROGRESS",True,(160,70,70))
@@ -2112,14 +2311,14 @@ def draw_menu(surf, idx, tick):
     ls2=pygame.Surface((W,2),pygame.SRCALPHA)
     for px2 in range(W): ls2.fill((*lc,int(200*math.sin(px2/W*math.pi))),(px2,0,1,2))
     surf.blit(ls2,(0,H-52))
-    tg=F_TAG.render("20 WORLDS · DOUBLE JUMP · 8 ENEMY TYPES · WEATHER · WORLD THEMES · HARDCORE",True,(72,50,50))
+    tg=F_TAG.render(f"{TOTAL_LEVELS} WORLDS · EMOTION JOURNEY · SETTINGS · WEATHER · WORLD THEMES",True,(72,50,50))
     surf.blit(tg,(W//2-tg.get_width()//2,H-24))
-    return btn, btn_rst
+    return btn, btn_set, btn_rst
 
 def draw_gameover(surf, death_world=0):
     t=pygame.time.get_ticks()/1000.0
     pulse=(math.sin(t*2.2)+1)/2
-    wt=WT[death_world%20]
+    wt=WTHEME(death_world)
     for y in range(0,H,1):
         pygame.draw.rect(surf,lerpC((20,0,0),(62,5,5),y/H),(0,y,W,1))
     for i in range(6):
@@ -2169,6 +2368,37 @@ def draw_gameover(surf, death_world=0):
     surf.blit(bl2,(btn.centerx-bl2.get_width()//2,btn.centery-bl2.get_height()//2))
     wn2=F_TAG.render(f"⚠  YOUR PROGRESS IS SAFE  ·  RESPAWNING ON WORLD {death_world+1}  ⚠",True,(118,110,40))
     surf.blit(wn2,(W//2-wn2.get_width()//2,H-26))
+    return btn
+
+def draw_level_complete(surf, level_idx, time_elapsed):
+    t=pygame.time.get_ticks()/1000.0
+    meta=level_meta(level_idx)
+    wt=WTHEME(level_idx)
+    for y in range(H):
+        surf.fill(lerpC(wt[0],wt[1],y/H),(0,y,W,1))
+    ov=pygame.Surface((W,H),pygame.SRCALPHA); ov.fill((0,0,0,105)); surf.blit(ov,(0,0))
+    for i in range(18):
+        x=int((i*73+t*38)%W); y=int(90+math.sin(t+i)*220+i*17)%H
+        circ(surf,wt[5],(x,y),2+i%4,120)
+    title=outlined("LEVEL COMPLETE",F_XL,wt[3],(0,0,0),4)
+    surf.blit(title,(W//2-title.get_width()//2,92))
+    draw_text(surf,f"WORLD {level_idx+1:03d}/{TOTAL_LEVELS} · {meta['world']}",
+              (W//2,178),(230,235,255),F_MD,center=True)
+    draw_text(surf,f"Emotion discovered: {meta['emotion'].upper()}",
+              (W//2,236),wt[3],F_LG,center=True)
+    event=WorldEventSystem(meta)
+    if event.has_major_challenge:
+        draw_text(surf,event.challenge_name,(W//2,282),(255,180,110),F_MD,center=True)
+    stars="★ ★ ★"
+    draw_text(surf,f"Stars: {stars}",(W//2,322),(255,220,90),F_MD,center=True)
+    draw_text(surf,f"Memory unlocked: {meta['story']}",
+              (W//2,376),(210,215,240),F_SUB,center=True)
+    ts=int(time_elapsed); draw_text(surf,f"Time: {ts//60:02d}:{ts%60:02d}",
+              (W//2,426),(170,185,220),F_SUB,center=True)
+    btn=pygame.Rect(W//2-145,500,290,58)
+    pygame.draw.rect(surf,lerpC(wt[3],(0,0,0),0.35),btn,border_radius=14)
+    pygame.draw.rect(surf,(255,255,255),btn,2,border_radius=14)
+    draw_text(surf,"CONTINUE",(btn.centerx,btn.y+15),(15,15,25),F_MD,center=True)
     return btn
 
 def draw_win(surf):
@@ -2225,7 +2455,7 @@ def draw_win(surf):
     hi3=pygame.Surface((btn2.w-10,10),pygame.SRCALPHA); hi3.fill((180,255,180,33)); surf.blit(hi3,(btn2.x+5,btn2.y+5))
     bl3=outlined("▶   PLAY AGAIN",F_LG,(200,255,200),(0,42,0),2)
     surf.blit(bl3,(btn2.centerx-bl3.get_width()//2,btn2.centery-bl3.get_height()//2))
-    et2=F_TAG.render("EMOTION ARCHITECT: ULTIMATE  ·  v5.0  ·  ALL 20 WORLDS CLEARED",True,(78,70,28))
+    et2=F_TAG.render(f"EMOTION ARCHITECT: ULTIMATE  ·  v5.0  ·  ALL {TOTAL_LEVELS} WORLDS CLEARED",True,(78,70,28))
     surf.blit(et2,(W//2-et2.get_width()//2,H-24))
     return btn2
 
@@ -2264,6 +2494,7 @@ joy=Joystick(88,H-88)
 class Game:
     def __init__(self):
         self.state="MENU"
+        self.settings_return_state="MENU"
         self.lives=5; self.tick=0
         self.platforms=[]; self.enemies=[]; self.coins=[]
         self.portal=None; self.start_pos=(60,H-80)
@@ -2276,12 +2507,27 @@ class Game:
         self.paused=False
         self.level_start_time=_time.time()
         self.death_world=0
+        self.completed_level_idx=0
+        self.completed_level_time=0
+        self.pending_next_level=0
+        self.level_meta=level_meta(self.level_idx)
+        self.emotion_profile=get_emotion_profile(self.level_meta["emotion"])
+        self.skill_tree=SkillTree(SD.get("emotions", []))
+        self.world_events=WorldEventSystem(self.level_meta)
         self.load_level(self.level_idx)
 
     def load_level(self, idx):
         random.seed(idx*11+7)
         self.level_idx=idx
+        self.level_meta=level_meta(idx)
+        self.emotion_profile=get_emotion_profile(self.level_meta["emotion"])
+        self.skill_tree=SkillTree(SD.get("emotions", []))
+        self.world_events=WorldEventSystem(self.level_meta)
         self.platforms,self.enemies,self.coins,self.start_pos,goal=build_level(idx)
+        for p in self.platforms:
+            p.base_mspeed = p.mspeed
+        for en in self.enemies:
+            en.base_speed = en.speed
         self.portal=Portal(*goal,world_idx=idx)
         player.spawn(*self.start_pos); player.world_idx=idx
         self.coins_got=0; self.world_transition=35
@@ -2294,7 +2540,18 @@ class Game:
 
     def die(self):
         if player.invincible>0: return
-        cam.hit(24,10); play(SND_DIE)
+        player.hit()
+        if SETTINGS.get("dream_mode"):
+            player.spawn(*self.start_pos, hit=True); player.world_idx=self.level_idx
+            return
+        if self.skill_tree.has("shield") and player.invincible==0:
+            player.invincible=45
+            ps.burst(player.rect.centerx,player.rect.centery,
+                     count=20,color=WTHEME(self.level_idx)[3],size=5,world=self.level_idx)
+            return
+        if SETTINGS.get("screen_shake") and not SETTINGS.get("reduce_motion"):
+            cam.hit(24,10)
+        play(SND_DIE)
         ps.burst(player.rect.centerx,player.rect.centery,
                  count=44,color=(255,65,65),size=9,world=self.level_idx)
         self.flash((255,30,30),245)
@@ -2306,7 +2563,7 @@ class Game:
             self.death_world=self.level_idx
             save_game(SD)
         else:
-            player.spawn(*self.start_pos); player.world_idx=self.level_idx
+            player.spawn(*self.start_pos, hit=True); player.world_idx=self.level_idx
 
     def flash(self, color=(255,255,255), strength=200):
         self.flash_alpha=strength; self.flash_color=color
@@ -2317,16 +2574,23 @@ class Game:
         if SD["best_times"][self.level_idx]==0 or elapsed<SD["best_times"][self.level_idx]:
             SD["best_times"][self.level_idx]=round(elapsed,1)
         SD["cleared"][self.level_idx]=True
-        play(SND_WIN); cam.hit(12)
+        EMOTIONS.complete_level(self.level_idx, level_meta(self.level_idx)["emotion"], stars=3)
+        self.skill_tree=SkillTree(SD.get("emotions", []))
+        play(SND_WIN)
+        if SETTINGS.get("screen_shake") and not SETTINGS.get("reduce_motion"):
+            cam.hit(12)
         self.flash((100,255,200),200)
         ps.burst(player.rect.centerx,player.rect.centery,
                  count=75,color=(100,255,200),size=8,world=self.level_idx)
         nxt=self.level_idx+1
-        if nxt>=20:
-            self.state="WIN"
+        self.completed_level_idx=self.level_idx
+        self.completed_level_time=elapsed
+        self.pending_next_level=nxt
+        if nxt>=TOTAL_LEVELS:
+            self.state="LEVEL_COMPLETE"
         else:
             SD["level"]=nxt; save_game(SD)
-            self.load_level(nxt)
+            self.state="LEVEL_COMPLETE"
 
     def run(self):
         while True:
@@ -2336,7 +2600,7 @@ class Game:
             # ── MENU ──────────────────────────────────────────
             if self.state=="MENU":
                 screen.fill((0,0,0))
-                btn,btn_rst=draw_menu(screen,self.level_idx,self.tick)
+                btn,btn_set,btn_rst=draw_menu(screen,self.level_idx,self.tick)
                 ps.draw(screen)
                 pygame.display.flip()
                 for e in pygame.event.get():
@@ -2344,12 +2608,37 @@ class Game:
                     if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
                         if btn.collidepoint(e.pos):
                             SD["runs"]+=1; save_game(SD); self.state="PLAY"
+                        if btn_set.collidepoint(e.pos):
+                            self.settings_return_state="MENU"; self.state="SETTINGS"
                         if btn_rst.collidepoint(e.pos):
                             SD.update({"level":0,"best":0,"deaths":0,"runs":0,"coins":0,
-                                       "cleared":[False]*20,"best_times":[0]*20})
+                                       "cleared":[False]*TOTAL_LEVELS,"best_times":[0]*TOTAL_LEVELS,
+                                       "completed_levels":[],"stars":0,"emotions":[]})
                             save_game(SD); self.level_idx=0; self.lives=5; self.load_level(0)
                     if e.type==pygame.KEYDOWN and e.key in (pygame.K_RETURN,pygame.K_SPACE):
                         SD["runs"]+=1; save_game(SD); self.state="PLAY"
+                continue
+
+            # ── SETTINGS ─────────────────────────────────────
+            if self.state=="SETTINGS":
+                back=draw_settings_screen(screen)
+                pygame.display.flip()
+                for e in pygame.event.get():
+                    if e.type==pygame.QUIT: sys.exit()
+                    if e.type==pygame.KEYDOWN:
+                        if e.key in (pygame.K_ESCAPE, pygame.K_b):
+                            self.state=self.settings_return_state
+                        elif e.key==pygame.K_1: cycle_setting("difficulty",["relaxed","normal","challenge"])
+                        elif e.key==pygame.K_2: SETTINGS.toggle("assist_mode")
+                        elif e.key==pygame.K_3: SETTINGS.toggle("auto_dash")
+                        elif e.key==pygame.K_4: SETTINGS.toggle("screen_shake")
+                        elif e.key==pygame.K_5: SETTINGS.toggle("focus_mode")
+                        elif e.key==pygame.K_6: SETTINGS.toggle("dream_mode")
+                        elif e.key==pygame.K_7: cycle_setting("aura",["purple_dream","blue_calm","red_courage","green_hope","gold_balance"])
+                        elif e.key==pygame.K_8: cycle_setting("particle_quality",["low","medium","high"])
+                        elif e.key==pygame.K_9: cycle_setting("emotion_intensity",["low","medium","high"])
+                    if e.type==pygame.MOUSEBUTTONDOWN and e.button==1 and back.collidepoint(e.pos):
+                        self.state=self.settings_return_state
                 continue
 
             # ── GAME OVER ─────────────────────────────────────
@@ -2366,6 +2655,24 @@ class Game:
                             self.state="PLAY"
                 continue
 
+            # ── LEVEL COMPLETE ───────────────────────────────
+            if self.state=="LEVEL_COMPLETE":
+                screen.fill((0,0,0)); btn=draw_level_complete(screen,self.completed_level_idx,self.completed_level_time)
+                ps.draw(screen); pygame.display.flip()
+                for e in pygame.event.get():
+                    if e.type==pygame.QUIT: sys.exit()
+                    if e.type==pygame.KEYDOWN and e.key in (pygame.K_RETURN,pygame.K_SPACE):
+                        if self.pending_next_level>=TOTAL_LEVELS:
+                            self.state="WIN"
+                        else:
+                            self.load_level(self.pending_next_level); self.state="PLAY"
+                    if e.type==pygame.MOUSEBUTTONDOWN and e.button==1 and btn.collidepoint(e.pos):
+                        if self.pending_next_level>=TOTAL_LEVELS:
+                            self.state="WIN"
+                        else:
+                            self.load_level(self.pending_next_level); self.state="PLAY"
+                continue
+
             # ── WIN ───────────────────────────────────────────
             if self.state=="WIN":
                 screen.fill((0,0,0)); btn=draw_win(screen)
@@ -2375,7 +2682,9 @@ class Game:
                     if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
                         if btn.collidepoint(e.pos):
                             SD.update({"level":0,"best":0,"deaths":0,"runs":0,
-                                       "cleared":[False]*20})
+                                       "cleared":[False]*TOTAL_LEVELS,
+                                       "best_times":[0]*TOTAL_LEVELS,
+                                       "completed_levels":[],"stars":0,"emotions":[]})
                             save_game(SD); self.lives=5; self.level_idx=0
                             self.load_level(0); self.state="MENU"
                 continue
@@ -2391,8 +2700,10 @@ class Game:
                     if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
                         if pause_btns[0].collidepoint(e.pos): self.paused=False; play(SND_PAUSE)
                         elif pause_btns[1].collidepoint(e.pos):
-                            self.paused=False; self.load_level(self.level_idx)
+                            self.paused=False; self.settings_return_state="PLAY"; self.state="SETTINGS"
                         elif pause_btns[2].collidepoint(e.pos):
+                            self.paused=False; self.load_level(self.level_idx)
+                        elif pause_btns[3].collidepoint(e.pos):
                             self.paused=False; self.state="MENU"
                 continue
 
@@ -2414,15 +2725,32 @@ class Game:
             if keys[pygame.K_LEFT]  or keys[pygame.K_a]: dx-=1
             if keys[pygame.K_RIGHT] or keys[pygame.K_d]: dx+=1
             dx+=joy.dx
+            if SETTINGS.get("auto_dash") and player.dash_t==0 and abs(dx)>0.1:
+                dash=True
+
+            speed_scale={"relaxed":0.82,"normal":1.0,"challenge":1.13}.get(SETTINGS.get("difficulty"),1.0)
+            if SETTINGS.get("assist_mode"):
+                speed_scale*=0.9
+            speed_scale*=self.world_events.intensity()
+            if self.skill_tree.has("slow_time"):
+                speed_scale*=0.92
 
             # ── UPDATE ────────────────────────────────────────
-            for p in self.platforms: p.update()
+            for p in self.platforms:
+                p.mspeed=getattr(p,"base_mspeed",p.mspeed)*speed_scale
+                p.update()
             for c in self.coins:
                 c.update(player.rect.centerx,player.rect.centery)
-            player.update(self.platforms,dx,jump,dash)
-            for en in self.enemies: en.update(player.rect.centerx,player.rect.centery)
+            player.update(self.platforms,dx,jump,dash,self.emotion_profile,self.skill_tree)
+            for en in self.enemies:
+                en.speed=getattr(en,"base_speed",en.speed)*speed_scale
+                en.update(player.rect.centerx,player.rect.centery)
             weather.update_emit(self.level_idx)
             intro_card.update()
+            if self.world_events.has_major_challenge and self.tick%45==0:
+                wt=WTHEME(self.level_idx)
+                ps.emit(random.randint(80,W-80),random.randint(80,H-100),
+                        count=2,life=50,color=wt[3],size=4,spread=1.8,grav=0,shape="ring")
 
             # Coin collection
             for c in self.coins:
@@ -2462,10 +2790,15 @@ class Game:
                 if self.combo_timer==0: self.combo=0
 
             # Ambient particles
-            if self.tick%9==0:
-                wt=WT[self.level_idx%20]
+            particle_step = 24 if SETTINGS.get("focus_mode") or SETTINGS.get("particle_quality")=="low" else 14 if SETTINGS.get("particle_quality")=="medium" else 9
+            if self.tick%particle_step==0:
+                wt=WTHEME(self.level_idx)
+                pcount=max(1,int(self.emotion_profile.get("particle",1.0)))
                 ps.emit(random.randint(0,W),H,count=1,vy=-0.85,life=230,
                         spread=0.4,color=wt[5],size=2,grav=-0.004,fade=True)
+                if pcount>1:
+                    ps.emit(random.randint(0,W),random.randint(80,H-120),count=pcount-1,
+                            life=110,color=wt[3],size=2,spread=0.7,grav=0,fade=True)
 
             # Popups
             self.popups=[p for p in self.popups if p[4]>0]

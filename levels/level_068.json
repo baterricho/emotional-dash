@@ -1,0 +1,21 @@
+{
+  "level": 68,
+  "name": "Shimmering Sewers Journey",
+  "emotion": "Reflection",
+  "world": "Shimmering Sewers",
+  "story": "The shimmering sewers turns reflection into a playable memory.",
+  "background": "shimmering_sewers",
+  "visual_effects": [
+    "sand",
+    "heat_haze"
+  ],
+  "platform_style": "coral",
+  "hazards": [],
+  "special_mechanic": "gravity_shifts",
+  "difficulty": "hard",
+  "decorations": [
+    "shimmering_sewers_silhouette",
+    "reflection_motes"
+  ],
+  "lighting": "dramatic"
+}

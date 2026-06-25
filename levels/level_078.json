@@ -1,0 +1,21 @@
+{
+  "level": 78,
+  "name": "Sunken Observatory Journey",
+  "emotion": "Ambition",
+  "world": "Sunken Observatory",
+  "story": "The sunken observatory turns ambition into a playable memory.",
+  "background": "sunken_observatory",
+  "visual_effects": [
+    "sand",
+    "heat_haze"
+  ],
+  "platform_style": "stone",
+  "hazards": [],
+  "special_mechanic": "air_control",
+  "difficulty": "expert",
+  "decorations": [
+    "sunken_observatory_silhouette",
+    "ambition_motes"
+  ],
+  "lighting": "dramatic"
+}

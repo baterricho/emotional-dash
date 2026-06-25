@@ -1,0 +1,21 @@
+{
+  "level": 64,
+  "name": "Cloud Stairway Journey",
+  "emotion": "Excitement",
+  "world": "Cloud Stairway",
+  "story": "The cloud stairway turns excitement into a playable memory.",
+  "background": "cloud_stairway",
+  "visual_effects": [
+    "snow",
+    "soft_fog"
+  ],
+  "platform_style": "neon",
+  "hazards": [],
+  "special_mechanic": "air_control",
+  "difficulty": "hard",
+  "decorations": [
+    "cloud_stairway_silhouette",
+    "excitement_motes"
+  ],
+  "lighting": "dramatic"
+}

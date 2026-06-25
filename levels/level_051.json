@@ -1,0 +1,21 @@
+{
+  "level": 51,
+  "name": "Skyline Reef Journey",
+  "emotion": "Courage",
+  "world": "Skyline Reef",
+  "story": "The skyline reef turns courage into a playable memory.",
+  "background": "skyline_reef",
+  "visual_effects": [
+    "purple_particles",
+    "floating_lights"
+  ],
+  "platform_style": "ice",
+  "hazards": [],
+  "special_mechanic": "precision_jumps",
+  "difficulty": "hard",
+  "decorations": [
+    "skyline_reef_silhouette",
+    "courage_motes"
+  ],
+  "lighting": "dramatic"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 94,
+  "name": "Static Meadow Journey",
+  "emotion": "Excitement",
+  "world": "Static Meadow",
+  "story": "The static meadow turns excitement into a playable memory.",
+  "background": "static_meadow",
+  "visual_effects": [
+    "snow",
+    "soft_fog"
+  ],
+  "platform_style": "neon",
+  "hazards": [],
+  "special_mechanic": "mastery_mix",
+  "difficulty": "expert",
+  "decorations": [
+    "static_meadow_silhouette",
+    "excitement_motes"
+  ],
+  "lighting": "dramatic"
+}

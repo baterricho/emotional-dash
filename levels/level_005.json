@@ -1,0 +1,21 @@
+{
+  "level": 5,
+  "name": "Warm Ember",
+  "emotion": "Determination",
+  "world": "Ember Grove",
+  "story": "Small fires mark the path toward persistence.",
+  "background": "ember_grove",
+  "visual_effects": [
+    "fire_particles",
+    "heat_haze"
+  ],
+  "platform_style": "scorched",
+  "hazards": [],
+  "special_mechanic": "dash_gaps",
+  "difficulty": "easy",
+  "decorations": [
+    "ember_grove_silhouette",
+    "determination_motes"
+  ],
+  "lighting": "soft"
+}

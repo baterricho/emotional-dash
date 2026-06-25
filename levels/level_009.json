@@ -1,0 +1,21 @@
+{
+  "level": 9,
+  "name": "Mirage Mile",
+  "emotion": "Patience",
+  "world": "Desert Mirage",
+  "story": "The path appears only when the player keeps moving.",
+  "background": "desert_mirage",
+  "visual_effects": [
+    "sand",
+    "heat_haze"
+  ],
+  "platform_style": "sandstone",
+  "hazards": [],
+  "special_mechanic": "moving_platforms",
+  "difficulty": "normal",
+  "decorations": [
+    "desert_mirage_silhouette",
+    "patience_motes"
+  ],
+  "lighting": "soft"
+}

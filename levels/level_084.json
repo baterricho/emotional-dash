@@ -1,0 +1,21 @@
+{
+  "level": 84,
+  "name": "Radiant Mine Journey",
+  "emotion": "Joy",
+  "world": "Radiant Mine",
+  "story": "The radiant mine turns joy into a playable memory.",
+  "background": "radiant_mine",
+  "visual_effects": [
+    "snow",
+    "soft_fog"
+  ],
+  "platform_style": "sandstone",
+  "hazards": [],
+  "special_mechanic": "memory_replay",
+  "difficulty": "expert",
+  "decorations": [
+    "radiant_mine_silhouette",
+    "joy_motes"
+  ],
+  "lighting": "dramatic"
+}

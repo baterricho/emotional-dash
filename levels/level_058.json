@@ -1,0 +1,21 @@
+{
+  "level": 58,
+  "name": "Wishing Quarry Journey",
+  "emotion": "Relief",
+  "world": "Wishing Quarry",
+  "story": "The wishing quarry turns relief into a playable memory.",
+  "background": "wishing_quarry",
+  "visual_effects": [
+    "sand",
+    "heat_haze"
+  ],
+  "platform_style": "lava",
+  "hazards": [],
+  "special_mechanic": "moving_platforms",
+  "difficulty": "hard",
+  "decorations": [
+    "wishing_quarry_silhouette",
+    "relief_motes"
+  ],
+  "lighting": "dramatic"
+}

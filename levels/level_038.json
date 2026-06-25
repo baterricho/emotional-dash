@@ -1,0 +1,21 @@
+{
+  "level": 38,
+  "name": "Copper Jungle Journey",
+  "emotion": "Reflection",
+  "world": "Copper Jungle",
+  "story": "The copper jungle turns reflection into a playable memory.",
+  "background": "copper_jungle",
+  "visual_effects": [
+    "sand",
+    "heat_haze"
+  ],
+  "platform_style": "coral",
+  "hazards": [],
+  "special_mechanic": "mastery_mix",
+  "difficulty": "hard",
+  "decorations": [
+    "copper_jungle_silhouette",
+    "reflection_motes"
+  ],
+  "lighting": "dramatic"
+}

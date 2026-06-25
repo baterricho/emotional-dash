@@ -1,0 +1,21 @@
+{
+  "level": 46,
+  "name": "Blooming Labyrinth Journey",
+  "emotion": "Awe",
+  "world": "Blooming Labyrinth",
+  "story": "The blooming labyrinth turns awe into a playable memory.",
+  "background": "blooming_labyrinth",
+  "visual_effects": [
+    "sparkle",
+    "gold_motes"
+  ],
+  "platform_style": "forest",
+  "hazards": [],
+  "special_mechanic": "phase_platforms",
+  "difficulty": "hard",
+  "decorations": [
+    "blooming_labyrinth_silhouette",
+    "awe_motes"
+  ],
+  "lighting": "dramatic"
+}

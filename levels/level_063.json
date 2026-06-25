@@ -1,0 +1,21 @@
+{
+  "level": 63,
+  "name": "Blue Fire Shrine Journey",
+  "emotion": "Trust",
+  "world": "Blue Fire Shrine",
+  "story": "The blue fire shrine turns trust into a playable memory.",
+  "background": "blue_fire_shrine",
+  "visual_effects": [
+    "rain",
+    "blue_mist"
+  ],
+  "platform_style": "stone",
+  "hazards": [],
+  "special_mechanic": "enemy_timing",
+  "difficulty": "hard",
+  "decorations": [
+    "blue_fire_shrine_silhouette",
+    "trust_motes"
+  ],
+  "lighting": "dramatic"
+}

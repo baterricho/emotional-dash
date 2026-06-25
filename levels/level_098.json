@@ -1,0 +1,21 @@
+{
+  "level": 98,
+  "name": "Laughing Ruins Journey",
+  "emotion": "Reflection",
+  "world": "Laughing Ruins",
+  "story": "The laughing ruins turns reflection into a playable memory.",
+  "background": "laughing_ruins",
+  "visual_effects": [
+    "sand",
+    "heat_haze"
+  ],
+  "platform_style": "coral",
+  "hazards": [],
+  "special_mechanic": "memory_replay",
+  "difficulty": "expert",
+  "decorations": [
+    "laughing_ruins_silhouette",
+    "reflection_motes"
+  ],
+  "lighting": "dramatic"
+}

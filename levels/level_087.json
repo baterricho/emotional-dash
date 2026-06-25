@@ -1,0 +1,21 @@
+{
+  "level": 87,
+  "name": "Crystal Lighthouse Journey",
+  "emotion": "Grief",
+  "world": "Crystal Lighthouse",
+  "story": "The crystal lighthouse turns grief into a playable memory.",
+  "background": "crystal_lighthouse",
+  "visual_effects": [
+    "glitch",
+    "broken_light"
+  ],
+  "platform_style": "normal",
+  "hazards": [],
+  "special_mechanic": "dash_routes",
+  "difficulty": "expert",
+  "decorations": [
+    "crystal_lighthouse_silhouette",
+    "grief_motes"
+  ],
+  "lighting": "dramatic"
+}

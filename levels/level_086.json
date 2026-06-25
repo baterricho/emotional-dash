@@ -1,0 +1,21 @@
+{
+  "level": 86,
+  "name": "Horizon Chapel Journey",
+  "emotion": "Growth",
+  "world": "Horizon Chapel",
+  "story": "The horizon chapel turns growth into a playable memory.",
+  "background": "horizon_chapel",
+  "visual_effects": [
+    "sparkle",
+    "gold_motes"
+  ],
+  "platform_style": "glitch",
+  "hazards": [],
+  "special_mechanic": "moving_platforms",
+  "difficulty": "expert",
+  "decorations": [
+    "horizon_chapel_silhouette",
+    "growth_motes"
+  ],
+  "lighting": "dramatic"
+}

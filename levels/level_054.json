@@ -1,0 +1,21 @@
+{
+  "level": 54,
+  "name": "Rose Machine Journey",
+  "emotion": "Joy",
+  "world": "Rose Machine",
+  "story": "The rose machine turns joy into a playable memory.",
+  "background": "rose_machine",
+  "visual_effects": [
+    "snow",
+    "soft_fog"
+  ],
+  "platform_style": "sandstone",
+  "hazards": [],
+  "special_mechanic": "gravity_shifts",
+  "difficulty": "hard",
+  "decorations": [
+    "rose_machine_silhouette",
+    "joy_motes"
+  ],
+  "lighting": "dramatic"
+}

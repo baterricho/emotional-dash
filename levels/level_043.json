@@ -1,0 +1,21 @@
+{
+  "level": 43,
+  "name": "Mirror Lake Journey",
+  "emotion": "Learning",
+  "world": "Mirror Lake",
+  "story": "The mirror lake turns learning into a playable memory.",
+  "background": "mirror_lake",
+  "visual_effects": [
+    "rain",
+    "blue_mist"
+  ],
+  "platform_style": "lava",
+  "hazards": [],
+  "special_mechanic": "basic_jump",
+  "difficulty": "hard",
+  "decorations": [
+    "mirror_lake_silhouette",
+    "learning_motes"
+  ],
+  "lighting": "dramatic"
+}

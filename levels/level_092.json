@@ -1,0 +1,21 @@
+{
+  "level": 92,
+  "name": "Puzzle Cathedral Journey",
+  "emotion": "Wonder",
+  "world": "Puzzle Cathedral",
+  "story": "The puzzle cathedral turns wonder into a playable memory.",
+  "background": "puzzle_cathedral",
+  "visual_effects": [
+    "glowing_particles",
+    "crystal_sparks"
+  ],
+  "platform_style": "crystal",
+  "hazards": [],
+  "special_mechanic": "air_control",
+  "difficulty": "expert",
+  "decorations": [
+    "puzzle_cathedral_silhouette",
+    "wonder_motes"
+  ],
+  "lighting": "dramatic"
+}

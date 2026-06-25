@@ -1,0 +1,21 @@
+{
+  "level": 61,
+  "name": "River of Names Journey",
+  "emotion": "Curiosity",
+  "world": "River of Names",
+  "story": "The river of names turns curiosity into a playable memory.",
+  "background": "river_of_names",
+  "visual_effects": [
+    "purple_particles",
+    "floating_lights"
+  ],
+  "platform_style": "forest",
+  "hazards": [],
+  "special_mechanic": "crumble_paths",
+  "difficulty": "hard",
+  "decorations": [
+    "river_of_names_silhouette",
+    "curiosity_motes"
+  ],
+  "lighting": "dramatic"
+}

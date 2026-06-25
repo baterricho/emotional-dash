@@ -1,0 +1,21 @@
+{
+  "level": 56,
+  "name": "Silver Hive Journey",
+  "emotion": "Growth",
+  "world": "Silver Hive",
+  "story": "The silver hive turns growth into a playable memory.",
+  "background": "silver_hive",
+  "visual_effects": [
+    "sparkle",
+    "gold_motes"
+  ],
+  "platform_style": "glitch",
+  "hazards": [],
+  "special_mechanic": "memory_replay",
+  "difficulty": "hard",
+  "decorations": [
+    "silver_hive_silhouette",
+    "growth_motes"
+  ],
+  "lighting": "dramatic"
+}

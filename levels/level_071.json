@@ -1,0 +1,21 @@
+{
+  "level": 71,
+  "name": "Frozen Crystal Kingdom Journey",
+  "emotion": "Vulnerability",
+  "world": "Frozen Moon Kingdom",
+  "story": "The frozen crystal kingdom turns vulnerability into a playable memory.",
+  "background": "frozen_moon_kingdom",
+  "visual_effects": [
+    "purple_particles",
+    "floating_lights"
+  ],
+  "platform_style": "glitch",
+  "hazards": [],
+  "special_mechanic": "basic_jump",
+  "difficulty": "hard",
+  "decorations": [
+    "frozen_crystal_kingdom_silhouette",
+    "vulnerability_motes"
+  ],
+  "lighting": "dramatic"
+}

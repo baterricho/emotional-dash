@@ -1,0 +1,21 @@
+{
+  "level": 23,
+  "name": "Thunder Museum Journey",
+  "emotion": "Peace",
+  "world": "Thunder Museum",
+  "story": "The thunder museum turns peace into a playable memory.",
+  "background": "thunder_museum",
+  "visual_effects": [
+    "rain",
+    "blue_mist"
+  ],
+  "platform_style": "coral",
+  "hazards": [],
+  "special_mechanic": "precision_jumps",
+  "difficulty": "normal",
+  "decorations": [
+    "thunder_museum_silhouette",
+    "peace_motes"
+  ],
+  "lighting": "soft"
+}

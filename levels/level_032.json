@@ -1,0 +1,21 @@
+{
+  "level": 32,
+  "name": "Sapphire Tundra Journey",
+  "emotion": "Wonder",
+  "world": "Sapphire Tundra",
+  "story": "The sapphire tundra turns wonder into a playable memory.",
+  "background": "sapphire_tundra",
+  "visual_effects": [
+    "glowing_particles",
+    "crystal_sparks"
+  ],
+  "platform_style": "crystal",
+  "hazards": [],
+  "special_mechanic": "phase_platforms",
+  "difficulty": "normal",
+  "decorations": [
+    "sapphire_tundra_silhouette",
+    "wonder_motes"
+  ],
+  "lighting": "soft"
+}

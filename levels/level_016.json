@@ -1,0 +1,21 @@
+{
+  "level": 16,
+  "name": "Alien Lullaby",
+  "emotion": "Awe",
+  "world": "Alien Planet",
+  "story": "Strange stars make the unknown feel survivable.",
+  "background": "alien_planet",
+  "visual_effects": [
+    "glowing_particles",
+    "low_gravity_motes"
+  ],
+  "platform_style": "crystal",
+  "hazards": [],
+  "special_mechanic": "wide_gaps",
+  "difficulty": "normal",
+  "decorations": [
+    "alien_planet_silhouette",
+    "awe_motes"
+  ],
+  "lighting": "soft"
+}

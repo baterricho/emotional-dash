@@ -1,0 +1,21 @@
+{
+  "level": 44,
+  "name": "Ashen Ballroom Journey",
+  "emotion": "Focus",
+  "world": "Ashen Ballroom",
+  "story": "The ashen ballroom turns focus into a playable memory.",
+  "background": "ashen_ballroom",
+  "visual_effects": [
+    "snow",
+    "soft_fog"
+  ],
+  "platform_style": "corroded",
+  "hazards": [],
+  "special_mechanic": "moving_platforms",
+  "difficulty": "hard",
+  "decorations": [
+    "ashen_ballroom_silhouette",
+    "focus_motes"
+  ],
+  "lighting": "dramatic"
+}

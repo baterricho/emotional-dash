@@ -1,0 +1,21 @@
+{
+  "level": 77,
+  "name": "Cobalt Circus Journey",
+  "emotion": "Persistence",
+  "world": "Cobalt Circus",
+  "story": "The cobalt circus turns persistence into a playable memory.",
+  "background": "cobalt_circus",
+  "visual_effects": [
+    "glitch",
+    "broken_light"
+  ],
+  "platform_style": "crystal",
+  "hazards": [],
+  "special_mechanic": "enemy_timing",
+  "difficulty": "expert",
+  "decorations": [
+    "cobalt_circus_silhouette",
+    "persistence_motes"
+  ],
+  "lighting": "dramatic"
+}

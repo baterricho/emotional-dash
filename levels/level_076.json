@@ -1,0 +1,21 @@
+{
+  "level": 76,
+  "name": "Forest of Doors Journey",
+  "emotion": "Awe",
+  "world": "Forest of Doors",
+  "story": "The forest of doors turns awe into a playable memory.",
+  "background": "forest_of_doors",
+  "visual_effects": [
+    "sparkle",
+    "gold_motes"
+  ],
+  "platform_style": "forest",
+  "hazards": [],
+  "special_mechanic": "boost_chain",
+  "difficulty": "expert",
+  "decorations": [
+    "forest_of_doors_silhouette",
+    "awe_motes"
+  ],
+  "lighting": "dramatic"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 26,
+  "name": "Silent Carnival Journey",
+  "emotion": "Growth",
+  "world": "Silent Carnival",
+  "story": "The silent carnival turns growth into a playable memory.",
+  "background": "silent_carnival",
+  "visual_effects": [
+    "sparkle",
+    "gold_motes"
+  ],
+  "platform_style": "glitch",
+  "hazards": [],
+  "special_mechanic": "gravity_shifts",
+  "difficulty": "normal",
+  "decorations": [
+    "silent_carnival_silhouette",
+    "growth_motes"
+  ],
+  "lighting": "soft"
+}

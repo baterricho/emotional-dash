@@ -1,0 +1,21 @@
+{
+  "level": 11,
+  "name": "Quiet Doorway",
+  "emotion": "Vulnerability",
+  "world": "Haunted Mansion",
+  "story": "Empty rooms ask the player to move through fear gently.",
+  "background": "haunted_mansion",
+  "visual_effects": [
+    "fog",
+    "dust"
+  ],
+  "platform_style": "stone",
+  "hazards": [],
+  "special_mechanic": "phase_platforms",
+  "difficulty": "normal",
+  "decorations": [
+    "haunted_mansion_silhouette",
+    "vulnerability_motes"
+  ],
+  "lighting": "soft"
+}

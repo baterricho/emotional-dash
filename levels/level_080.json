@@ -1,0 +1,21 @@
+{
+  "level": 80,
+  "name": "Chaos Inside",
+  "emotion": "Confusion",
+  "world": "Reality Break",
+  "story": "Rules fracture until the player finds their own rhythm.",
+  "background": "reality_break",
+  "visual_effects": [
+    "glitch",
+    "broken_light"
+  ],
+  "platform_style": "glitch",
+  "hazards": [],
+  "special_mechanic": "gravity_changes",
+  "difficulty": "expert",
+  "decorations": [
+    "reality_break_silhouette",
+    "confusion_motes"
+  ],
+  "lighting": "dramatic"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 74,
+  "name": "Candle Ocean Journey",
+  "emotion": "Focus",
+  "world": "Candle Ocean",
+  "story": "The candle ocean turns focus into a playable memory.",
+  "background": "candle_ocean",
+  "visual_effects": [
+    "snow",
+    "soft_fog"
+  ],
+  "platform_style": "corroded",
+  "hazards": [],
+  "special_mechanic": "phase_platforms",
+  "difficulty": "hard",
+  "decorations": [
+    "candle_ocean_silhouette",
+    "focus_motes"
+  ],
+  "lighting": "dramatic"
+}

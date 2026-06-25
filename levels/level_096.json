@@ -1,0 +1,21 @@
+{
+  "level": 96,
+  "name": "Gravity Orchard Journey",
+  "emotion": "Calm",
+  "world": "Gravity Orchard",
+  "story": "The gravity orchard turns calm into a playable memory.",
+  "background": "gravity_orchard",
+  "visual_effects": [
+    "sparkle",
+    "gold_motes"
+  ],
+  "platform_style": "ice",
+  "hazards": [],
+  "special_mechanic": "gravity_shifts",
+  "difficulty": "expert",
+  "decorations": [
+    "gravity_orchard_silhouette",
+    "calm_motes"
+  ],
+  "lighting": "dramatic"
+}

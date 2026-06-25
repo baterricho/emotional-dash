@@ -1,0 +1,21 @@
+{
+  "level": 25,
+  "name": "Clockwork Harbor Journey",
+  "emotion": "Acceptance",
+  "world": "Clockwork Harbor",
+  "story": "The clockwork harbor turns acceptance into a playable memory.",
+  "background": "clockwork_harbor",
+  "visual_effects": [
+    "fire_particles",
+    "embers"
+  ],
+  "platform_style": "metal",
+  "hazards": [],
+  "special_mechanic": "sliding_mechanics",
+  "difficulty": "normal",
+  "decorations": [
+    "clockwork_harbor_silhouette",
+    "acceptance_motes"
+  ],
+  "lighting": "soft"
+}

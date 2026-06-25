@@ -1,0 +1,21 @@
+{
+  "level": 15,
+  "name": "Storm Naming",
+  "emotion": "Anxiety",
+  "world": "Storm Realm",
+  "story": "Thunder gives a name to the pressure inside.",
+  "background": "storm_realm",
+  "visual_effects": [
+    "rain",
+    "lightning"
+  ],
+  "platform_style": "metal",
+  "hazards": [],
+  "special_mechanic": "fast_platforms",
+  "difficulty": "normal",
+  "decorations": [
+    "storm_realm_silhouette",
+    "anxiety_motes"
+  ],
+  "lighting": "soft"
+}

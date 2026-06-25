@@ -1,0 +1,21 @@
+{
+  "level": 35,
+  "name": "Mushroom Galaxy Journey",
+  "emotion": "Determination",
+  "world": "Mushroom Galaxy",
+  "story": "The mushroom galaxy turns determination into a playable memory.",
+  "background": "mushroom_galaxy",
+  "visual_effects": [
+    "fire_particles",
+    "embers"
+  ],
+  "platform_style": "scorched",
+  "hazards": [],
+  "special_mechanic": "enemy_timing",
+  "difficulty": "normal",
+  "decorations": [
+    "mushroom_galaxy_silhouette",
+    "determination_motes"
+  ],
+  "lighting": "soft"
+}

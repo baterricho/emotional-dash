@@ -1,0 +1,21 @@
+{
+  "level": 28,
+  "name": "Paper Mountains Journey",
+  "emotion": "Relief",
+  "world": "Paper Mountains",
+  "story": "The paper mountains turns relief into a playable memory.",
+  "background": "paper_mountains",
+  "visual_effects": [
+    "sand",
+    "heat_haze"
+  ],
+  "platform_style": "lava",
+  "hazards": [],
+  "special_mechanic": "memory_replay",
+  "difficulty": "normal",
+  "decorations": [
+    "paper_mountains_silhouette",
+    "relief_motes"
+  ],
+  "lighting": "soft"
+}

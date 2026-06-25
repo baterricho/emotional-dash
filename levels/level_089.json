@@ -1,0 +1,21 @@
+{
+  "level": 89,
+  "name": "Firefly Court Journey",
+  "emotion": "Forgiveness",
+  "world": "Firefly Court",
+  "story": "The firefly court turns forgiveness into a playable memory.",
+  "background": "firefly_court",
+  "visual_effects": [
+    "petals",
+    "sun_rays"
+  ],
+  "platform_style": "corroded",
+  "hazards": [],
+  "special_mechanic": "crumble_paths",
+  "difficulty": "expert",
+  "decorations": [
+    "firefly_court_silhouette",
+    "forgiveness_motes"
+  ],
+  "lighting": "dramatic"
+}

@@ -1,0 +1,21 @@
+{
+  "level": 93,
+  "name": "Fragmented Metro Journey",
+  "emotion": "Trust",
+  "world": "Fragmented Metro",
+  "story": "The fragmented metro turns trust into a playable memory.",
+  "background": "fragmented_metro",
+  "visual_effects": [
+    "rain",
+    "blue_mist"
+  ],
+  "platform_style": "stone",
+  "hazards": [],
+  "special_mechanic": "precision_jumps",
+  "difficulty": "expert",
+  "decorations": [
+    "fragmented_metro_silhouette",
+    "trust_motes"
+  ],
+  "lighting": "dramatic"
+}

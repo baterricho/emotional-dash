@@ -1,0 +1,21 @@
+{
+  "level": 36,
+  "name": "Hollow Theater Journey",
+  "emotion": "Calm",
+  "world": "Hollow Theater",
+  "story": "The hollow theater turns calm into a playable memory.",
+  "background": "hollow_theater",
+  "visual_effects": [
+    "sparkle",
+    "gold_motes"
+  ],
+  "platform_style": "ice",
+  "hazards": [],
+  "special_mechanic": "air_control",
+  "difficulty": "hard",
+  "decorations": [
+    "hollow_theater_silhouette",
+    "calm_motes"
+  ],
+  "lighting": "dramatic"
+}

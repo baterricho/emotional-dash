@@ -1,0 +1,21 @@
+{
+  "level": 34,
+  "name": "Solar Monastery Journey",
+  "emotion": "Excitement",
+  "world": "Solar Monastery",
+  "story": "The solar monastery turns excitement into a playable memory.",
+  "background": "solar_monastery",
+  "visual_effects": [
+    "snow",
+    "soft_fog"
+  ],
+  "platform_style": "neon",
+  "hazards": [],
+  "special_mechanic": "boost_chain",
+  "difficulty": "normal",
+  "decorations": [
+    "solar_monastery_silhouette",
+    "excitement_motes"
+  ],
+  "lighting": "soft"
+}

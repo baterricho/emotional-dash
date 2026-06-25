@@ -1,0 +1,21 @@
+{
+  "level": 2,
+  "name": "Crystal Whisper",
+  "emotion": "Wonder",
+  "world": "Crystal Cave",
+  "story": "A quiet cave answers every small question with light.",
+  "background": "crystal_cave",
+  "visual_effects": [
+    "glowing_particles",
+    "crystal_sparks"
+  ],
+  "platform_style": "crystal",
+  "hazards": [],
+  "special_mechanic": "moving_platforms",
+  "difficulty": "easy",
+  "decorations": [
+    "crystal_cave_silhouette",
+    "wonder_motes"
+  ],
+  "lighting": "soft"
+}

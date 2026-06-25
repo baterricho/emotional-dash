@@ -1,0 +1,21 @@
+{
+  "level": 82,
+  "name": "Kindness Kitchen Journey",
+  "emotion": "Strength",
+  "world": "Kindness Kitchen",
+  "story": "The kindness kitchen turns strength into a playable memory.",
+  "background": "kindness_kitchen",
+  "visual_effects": [
+    "glowing_particles",
+    "crystal_sparks"
+  ],
+  "platform_style": "mossy",
+  "hazards": [],
+  "special_mechanic": "gravity_shifts",
+  "difficulty": "expert",
+  "decorations": [
+    "kindness_kitchen_silhouette",
+    "strength_motes"
+  ],
+  "lighting": "dramatic"
+}

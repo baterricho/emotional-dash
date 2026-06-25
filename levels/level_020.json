@@ -1,0 +1,21 @@
+{
+  "level": 20,
+  "name": "Lost Memory",
+  "emotion": "Sadness",
+  "world": "Rainy Forgotten City",
+  "story": "Empty streets remember what the player cannot.",
+  "background": "rainy_forgotten_city",
+  "visual_effects": [
+    "rain",
+    "blue_mist"
+  ],
+  "platform_style": "stone",
+  "hazards": [],
+  "special_mechanic": "hidden_paths",
+  "difficulty": "normal",
+  "decorations": [
+    "rainy_forgotten_city_silhouette",
+    "sadness_motes"
+  ],
+  "lighting": "soft"
+}

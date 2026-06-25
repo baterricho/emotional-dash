@@ -1,0 +1,21 @@
+{
+  "level": 53,
+  "name": "Quiet Battlefield Journey",
+  "emotion": "Peace",
+  "world": "Quiet Battlefield",
+  "story": "The quiet battlefield turns peace into a playable memory.",
+  "background": "quiet_battlefield",
+  "visual_effects": [
+    "rain",
+    "blue_mist"
+  ],
+  "platform_style": "coral",
+  "hazards": [],
+  "special_mechanic": "sliding_mechanics",
+  "difficulty": "hard",
+  "decorations": [
+    "quiet_battlefield_silhouette",
+    "peace_motes"
+  ],
+  "lighting": "dramatic"
+}

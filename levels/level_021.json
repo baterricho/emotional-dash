@@ -1,0 +1,21 @@
+{
+  "level": 21,
+  "name": "Lantern Marsh Journey",
+  "emotion": "Courage",
+  "world": "Lantern Marsh",
+  "story": "The lantern marsh turns courage into a playable memory.",
+  "background": "lantern_marsh",
+  "visual_effects": [
+    "purple_particles",
+    "floating_lights"
+  ],
+  "platform_style": "ice",
+  "hazards": [],
+  "special_mechanic": "enemy_timing",
+  "difficulty": "normal",
+  "decorations": [
+    "lantern_marsh_silhouette",
+    "courage_motes"
+  ],
+  "lighting": "soft"
+}

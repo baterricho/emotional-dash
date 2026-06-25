@@ -1,0 +1,21 @@
+{
+  "level": 91,
+  "name": "Reality Break Journey",
+  "emotion": "Curiosity",
+  "world": "Reality Mend Garden",
+  "story": "The reality break turns curiosity into a playable memory.",
+  "background": "reality_mend_garden",
+  "visual_effects": [
+    "purple_particles",
+    "floating_lights"
+  ],
+  "platform_style": "forest",
+  "hazards": [],
+  "special_mechanic": "enemy_timing",
+  "difficulty": "expert",
+  "decorations": [
+    "reality_break_silhouette",
+    "curiosity_motes"
+  ],
+  "lighting": "dramatic"
+}

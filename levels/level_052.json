@@ -1,0 +1,21 @@
+{
+  "level": 52,
+  "name": "Comet Nursery Journey",
+  "emotion": "Strength",
+  "world": "Comet Nursery",
+  "story": "The comet nursery turns strength into a playable memory.",
+  "background": "comet_nursery",
+  "visual_effects": [
+    "glowing_particles",
+    "crystal_sparks"
+  ],
+  "platform_style": "mossy",
+  "hazards": [],
+  "special_mechanic": "mastery_mix",
+  "difficulty": "hard",
+  "decorations": [
+    "comet_nursery_silhouette",
+    "strength_motes"
+  ],
+  "lighting": "dramatic"
+}

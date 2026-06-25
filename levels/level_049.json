@@ -1,0 +1,21 @@
+{
+  "level": 49,
+  "name": "Soft Eclipse Journey",
+  "emotion": "Doubt",
+  "world": "Soft Eclipse",
+  "story": "The soft eclipse turns doubt into a playable memory.",
+  "background": "soft_eclipse",
+  "visual_effects": [
+    "petals",
+    "sun_rays"
+  ],
+  "platform_style": "neon",
+  "hazards": [],
+  "special_mechanic": "enemy_timing",
+  "difficulty": "hard",
+  "decorations": [
+    "soft_eclipse_silhouette",
+    "doubt_motes"
+  ],
+  "lighting": "dramatic"
+}

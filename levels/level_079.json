@@ -1,0 +1,21 @@
+{
+  "level": 79,
+  "name": "Jade Storm Journey",
+  "emotion": "Doubt",
+  "world": "Jade Storm",
+  "story": "The jade storm turns doubt into a playable memory.",
+  "background": "jade_storm",
+  "visual_effects": [
+    "petals",
+    "sun_rays"
+  ],
+  "platform_style": "neon",
+  "hazards": [],
+  "special_mechanic": "precision_jumps",
+  "difficulty": "expert",
+  "decorations": [
+    "jade_storm_silhouette",
+    "doubt_motes"
+  ],
+  "lighting": "dramatic"
+}

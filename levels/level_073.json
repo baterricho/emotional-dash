@@ -1,0 +1,21 @@
+{
+  "level": 73,
+  "name": "Temple of Rainbows Journey",
+  "emotion": "Learning",
+  "world": "Temple of Rainbows",
+  "story": "The temple of rainbows turns learning into a playable memory.",
+  "background": "temple_of_rainbows",
+  "visual_effects": [
+    "rain",
+    "blue_mist"
+  ],
+  "platform_style": "lava",
+  "hazards": [],
+  "special_mechanic": "dash_routes",
+  "difficulty": "hard",
+  "decorations": [
+    "temple_of_rainbows_silhouette",
+    "learning_motes"
+  ],
+  "lighting": "dramatic"
+}

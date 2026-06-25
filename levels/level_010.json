@@ -1,0 +1,21 @@
+{
+  "level": 10,
+  "name": "Growing Strong",
+  "emotion": "Confidence",
+  "world": "Crystal Valley",
+  "story": "Bright crystal bridges answer every brave step.",
+  "background": "crystal_valley",
+  "visual_effects": [
+    "crystal_sparks",
+    "glowing_particles"
+  ],
+  "platform_style": "crystal",
+  "hazards": [],
+  "special_mechanic": "moving_platforms",
+  "difficulty": "normal",
+  "decorations": [
+    "crystal_valley_silhouette",
+    "confidence_motes"
+  ],
+  "lighting": "soft"
+}

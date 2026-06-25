@@ -1,0 +1,21 @@
+{
+  "level": 1,
+  "name": "First Step",
+  "emotion": "Curiosity",
+  "world": "Dream Forest",
+  "story": "The character begins discovering their emotions.",
+  "background": "dream_forest",
+  "visual_effects": [
+    "purple_particles",
+    "floating_lights"
+  ],
+  "platform_style": "forest",
+  "hazards": [],
+  "special_mechanic": "basic_jump",
+  "difficulty": "easy",
+  "decorations": [
+    "dream_forest_silhouette",
+    "curiosity_motes"
+  ],
+  "lighting": "soft"
+}

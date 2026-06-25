@@ -1,0 +1,21 @@
+{
+  "level": 62,
+  "name": "Amber Factory Journey",
+  "emotion": "Wonder",
+  "world": "Amber Factory",
+  "story": "The amber factory turns wonder into a playable memory.",
+  "background": "amber_factory",
+  "visual_effects": [
+    "glowing_particles",
+    "crystal_sparks"
+  ],
+  "platform_style": "crystal",
+  "hazards": [],
+  "special_mechanic": "boost_chain",
+  "difficulty": "hard",
+  "decorations": [
+    "amber_factory_silhouette",
+    "wonder_motes"
+  ],
+  "lighting": "dramatic"
+}

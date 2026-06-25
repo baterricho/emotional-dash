@@ -1,0 +1,21 @@
+{
+  "level": 13,
+  "name": "Unwritten Page",
+  "emotion": "Learning",
+  "world": "Ancient Library",
+  "story": "Books rearrange themselves around every mistake.",
+  "background": "ancient_library",
+  "visual_effects": [
+    "dust",
+    "gold_motes"
+  ],
+  "platform_style": "stone",
+  "hazards": [],
+  "special_mechanic": "timed_routes",
+  "difficulty": "normal",
+  "decorations": [
+    "ancient_library_silhouette",
+    "learning_motes"
+  ],
+  "lighting": "soft"
+}
