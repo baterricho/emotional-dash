@@ -3,53 +3,89 @@ import os
 from pathlib import Path
 
 
+SETTINGS_VERSION = 2
+
 DEFAULT_SETTINGS = {
+    "settings_version": SETTINGS_VERSION,
+    
+    # GAMEPLAY
     "difficulty": "normal",
     "assist_mode": False,
     "auto_dash": False,
     "screen_shake": True,
-    "show_tutorial": True,
-    "resolution": "1280x720",
+    "tutorial": True,
+    "checkpoint_assist": False,
+    "game_speed": 100,
+
+    # GRAPHICS
     "fullscreen": False,
+    "resolution": "1280x720",
     "pixel_art_mode": True,
     "particle_quality": "high",
     "background_effects": "high",
+    "lighting_effects": True,
     "brightness": 100,
-    "visual_effects": True,
+    "screen_effects": True,
+    "fps_display": False,
+
+    # AUDIO
     "master_volume": 80,
     "music_volume": 70,
     "sfx_volume": 80,
     "ambient_volume": 70,
     "emotion_music": True,
     "environment_sounds": True,
+    "mute_all": False,
+
+    # CONTROLS
     "controller_support": True,
     "controller_vibration": True,
-    "color_mode": "normal",
-    "text_size": "medium",
-    "reduce_motion": False,
-    "flash_effects": True,
-    "subtitles": False,
+    "mouse_sensitivity": 50,
+    "key_left": 97,      # pygame.K_a
+    "key_right": 100,    # pygame.K_d
+    "key_jump": 32,      # pygame.K_SPACE
+    "key_dash": 1073742049, # pygame.K_LSHIFT
+    "key_skill": 101,    # pygame.K_e
+    "key_pause": 27,     # pygame.K_ESCAPE
+    "key_interact": 13,  # pygame.K_RETURN
+
+    # YOUR JOURNEY
     "emotion_intensity": "medium",
-    "memory_mode": False,
-    "focus_mode": False,
-    "dream_mode": False,
     "aura": "purple_dream",
     "dash_effect": "shadow_trail",
-    "menu_theme": "dream_theme",
-    "keybinds": {
-        "left": ["a", "left"],
-        "right": ["d", "right"],
-        "jump": ["space", "up", "w"],
-        "dash": ["left shift", "right shift"],
-        "skill": ["e"]
-    }
+    "focus_mode": False,
+    "dream_mode": False,
+    "color_theme": "dream_theme",
+
+    # ACCESSIBILITY
+    "reduce_motion": False,
+    "color_blind_mode": False,
+    "high_contrast": False,
+    "text_size": "medium",
 }
 
 
 class SettingsManager:
     def __init__(self, path=None):
         self.path = Path(path or os.path.join(os.getcwd(), "settings.json"))
+        self._listeners = {}
         self.data = self._load()
+
+    def add_listener(self, event_name, callback):
+        if event_name not in self._listeners:
+            self._listeners[event_name] = []
+        if callback not in self._listeners[event_name]:
+            self._listeners[event_name].append(callback)
+
+    def remove_listener(self, event_name, callback):
+        if event_name in self._listeners and callback in self._listeners[event_name]:
+            self._listeners[event_name].remove(callback)
+
+    def _emit(self, event_name, key, value):
+        for callback in self._listeners.get(event_name, []):
+            callback(key, value)
+        for callback in self._listeners.get("any_setting_changed", []):
+            callback(key, value)
 
     def _load(self):
         data = dict(DEFAULT_SETTINGS)
@@ -57,11 +93,20 @@ class SettingsManager:
             try:
                 with self.path.open("r", encoding="utf-8") as f:
                     loaded = json.load(f)
-                data.update(loaded)
-                if isinstance(loaded.get("keybinds"), dict):
-                    merged_keys = dict(DEFAULT_SETTINGS["keybinds"])
-                    merged_keys.update(loaded["keybinds"])
-                    data["keybinds"] = merged_keys
+                
+                # Migration logic
+                loaded_version = loaded.get("settings_version", 0)
+                if loaded_version < SETTINGS_VERSION:
+                    print(f"Migrating settings from version {loaded_version} to {SETTINGS_VERSION}")
+                
+                # Merge settings
+                for k, v in loaded.items():
+                    if k in data and isinstance(data[k], dict) and isinstance(v, dict):
+                        data[k].update(v)
+                    elif k in data:
+                        data[k] = v
+                        
+                data["settings_version"] = SETTINGS_VERSION
             except (OSError, json.JSONDecodeError):
                 pass
         return data
@@ -75,8 +120,10 @@ class SettingsManager:
         return self.data.get(key, default)
 
     def set(self, key, value):
-        self.data[key] = value
-        self.save()
+        if self.data.get(key) != value:
+            self.data[key] = value
+            self.save()
+            self._emit(f"{key}_changed", key, value)
 
     def toggle(self, key):
         value = not bool(self.data.get(key))

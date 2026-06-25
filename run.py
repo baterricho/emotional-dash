@@ -1,4 +1,4 @@
-﻿"""
+"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║  EMOTION ARCHITECT  ◆  ULTIMATE EDITION  ◆                                ║
 ║  20 Worlds · 3D Phong Balls · Weather · Combos · Parallax · World Cards    ║
@@ -44,8 +44,24 @@ def get_save_path():
     return os.path.join(save_dir, SAVE_BASENAME)
 
 SAVE = get_save_path()
-LEGACY_SAVE = os.path.join(os.getcwd(), SAVE_BASENAME)
-screen = pygame.display.set_mode((W, H))
+LEGACY_SAVE = os.path.join(os.getcwd(), "ea_v5.json")
+
+# Canvas and Display Initialization
+screen = pygame.Surface((W, H))
+window = None
+
+def apply_resolution_settings(*args):
+    global window
+    res_str = SETTINGS.get("resolution", "1280x720")
+    try: w_disp, h_disp = map(int, res_str.split('x'))
+    except Exception: w_disp, h_disp = 1280, 720
+    flags = pygame.FULLSCREEN if SETTINGS.get("fullscreen") else 0
+    window = pygame.display.set_mode((w_disp, h_disp), flags)
+
+apply_resolution_settings()
+SETTINGS.add_listener("resolution_changed", apply_resolution_settings)
+SETTINGS.add_listener("fullscreen_changed", apply_resolution_settings)
+
 pygame.display.set_caption("EMOTION ARCHITECT: ULTIMATE")
 clock  = pygame.time.Clock()
 
@@ -70,6 +86,81 @@ F_TITLE = mkf(["Bahnschrift","Impact","Arial Black"], 108, bold=True)
 F_GIANT = mkf(["Bahnschrift","Impact","Arial Black"], 130, bold=True)
 F_SUB   = mkf(["Bahnschrift","Calibri","Segoe UI"], 19)
 F_TAG   = mkf(["Consolas","Lucida Console","Courier New"], 12)
+
+# ═══════════════════════════════════════════════════════════════
+#  CORE SETTINGS WRAPPERS (Audio / Display)
+# ═══════════════════════════════════════════════════════════════
+def get_scaled_mouse_pos(pos=None):
+    if pos is None:
+        mx, my = pygame.mouse.get_pos()
+    else:
+        mx, my = pos
+    win_w, win_h = window.get_size()
+    return int(mx * W / max(1, win_w)), int(my * H / max(1, win_h))
+
+def get_events():
+    for e in pygame.event.get():
+        if hasattr(e, 'pos'):
+            e.pos = get_scaled_mouse_pos(e.pos)
+        yield e
+
+def flip_display():
+    brightness = SETTINGS.get("brightness", 100)
+    if brightness < 100:
+        overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+        alpha = int(255 * (100 - brightness) / 100.0)
+        overlay.fill((0, 0, 0, alpha))
+        screen.blit(overlay, (0, 0))
+        
+    win_w, win_h = window.get_size()
+    if SETTINGS.get("pixel_art_mode", True):
+        pygame.transform.scale(screen, (win_w, win_h), window)
+    else:
+        pygame.transform.smoothscale(screen, (win_w, win_h), window)
+        
+    if SETTINGS.get("fps_display", False):
+        fps_surf = F_SM.render(f"FPS: {int(clock.get_fps())}", True, (0, 255, 0))
+        window.blit(fps_surf, (10, 10))
+
+    pygame.display.flip()
+
+if MIXER_OK:
+    pygame.mixer.set_num_channels(32)
+    CHANNEL_MUSIC = pygame.mixer.Channel(0)
+    CHANNEL_SFX = pygame.mixer.Channel(1)
+    CHANNEL_ENV = pygame.mixer.Channel(2)
+    CHANNEL_EMOTION = pygame.mixer.Channel(3)
+    
+    def sync_audio_volumes(*args):
+        if SETTINGS.get("mute_all", False):
+            CHANNEL_MUSIC.set_volume(0)
+            CHANNEL_SFX.set_volume(0)
+            CHANNEL_ENV.set_volume(0)
+            CHANNEL_EMOTION.set_volume(0)
+        else:
+            master = SETTINGS.get("master_volume", 80) / 100.0
+            CHANNEL_MUSIC.set_volume((SETTINGS.get("music_volume", 70) / 100.0) * master)
+            CHANNEL_SFX.set_volume((SETTINGS.get("sfx_volume", 80) / 100.0) * master)
+            CHANNEL_ENV.set_volume((SETTINGS.get("ambient_volume", 70) / 100.0) * master)
+            CHANNEL_EMOTION.set_volume((SETTINGS.get("music_volume", 70) / 100.0) * master)
+
+    sync_audio_volumes()
+    SETTINGS.add_listener("master_volume_changed", sync_audio_volumes)
+    SETTINGS.add_listener("music_volume_changed", sync_audio_volumes)
+    SETTINGS.add_listener("sfx_volume_changed", sync_audio_volumes)
+    SETTINGS.add_listener("ambient_volume_changed", sync_audio_volumes)
+    SETTINGS.add_listener("mute_all_changed", sync_audio_volumes)
+
+# ═══════════════════════════════════════════════════════════════
+#  HELPERS
+# ═══════════════════════════════════════════════════════════════
+def clamp(x,a,b): return max(a,min(b,x))
+def lerp(a,b,t):  return a+(b-a)*t
+def lerpC(c1,c2,t): return tuple(int(lerp(c1[i],c2[i],t)) for i in range(3))
+
+def hsv(h,s,v):
+    r,g,b = colorsys.hsv_to_rgb(h%1.0,s,v)
+    return (int(r*255),int(g*255),int(b*255))
 
 # ═══════════════════════════════════════════════════════════════
 #  SAVE / STATS
@@ -100,19 +191,8 @@ if "cleared" not in SD: SD["cleared"] = []
 if "best_times" not in SD: SD["best_times"] = []
 SD["cleared"] = (SD["cleared"] + [False]*TOTAL_LEVELS)[:TOTAL_LEVELS]
 SD["best_times"] = (SD["best_times"] + [0]*TOTAL_LEVELS)[:TOTAL_LEVELS]
-SD["level"] = clamp(SD.get("level", 0), 0, TOTAL_LEVELS-1) if "clamp" in globals() else min(max(SD.get("level", 0), 0), TOTAL_LEVELS-1)
+SD["level"] = clamp(SD.get("level", 0), 0, TOTAL_LEVELS-1)
 EMOTIONS = EmotionSystem(SD)
-
-# ═══════════════════════════════════════════════════════════════
-#  HELPERS
-# ═══════════════════════════════════════════════════════════════
-def clamp(x,a,b): return max(a,min(b,x))
-def lerp(a,b,t):  return a+(b-a)*t
-def lerpC(c1,c2,t): return tuple(int(lerp(c1[i],c2[i],t)) for i in range(3))
-
-def hsv(h,s,v):
-    r,g,b = colorsys.hsv_to_rgb(h%1.0,s,v)
-    return (int(r*255),int(g*255),int(b*255))
 
 def draw_text(surf,txt,pos,color=(255,255,255),font=None,center=False,shadow=True,alpha=255):
     f = font or F_SM
@@ -160,6 +240,7 @@ def circ(surf, color, pos, radius, alpha=255):
 
 # ═══════════════════════════════════════════════════════════════
 #  WORLD THEMES  (100 worlds, first 20 handcrafted then metadata-extended)
+#  WORLD THEMES  (20 worlds, each fully unique)
 # ═══════════════════════════════════════════════════════════════
 #  bg_top, bg_bot, plat_col, accent, enemy_col, fx_col, name,
 #  weather, fog_col, platform_style
@@ -320,9 +401,15 @@ try:
 except Exception:
     SOUND_OK = False
 
-def play(snd):
+def play(snd, channel=None):
     if SOUND_OK and snd is not None:
-        try: snd.play()
+        try:
+            if channel:
+                channel.play(snd)
+            elif MIXER_OK and 'CHANNEL_SFX' in globals():
+                CHANNEL_SFX.play(snd)
+            else:
+                snd.play()
         except: pass
 
 # ═══════════════════════════════════════════════════════════════
@@ -417,6 +504,75 @@ ps = PS()
 #  WEATHER SYSTEM
 # ═══════════════════════════════════════════════════════════════
 class Weather:
+    EFFECTS = {
+        "leaves": {
+            "freq": 5, "y": -10.0, "vy_range": (1.2, 2.8), "vx_range": (-1, 1),
+            "life_range": (160, 280), "size_range": (4, 8), "rot_range": (-0.05, 0.05),
+            "colors": [(80, 160, 40), (60, 140, 30), (100, 180, 50), (120, 200, 60)]
+        },
+        "embers": {
+            "freq": 3, "y_range": ("H-150", "H"), "vy_range": (-2.5, -0.8), "vx_range": (-0.8, 0.8),
+            "life_range": (60, 120), "size_range": (2, 4),
+            "colors": [(255, 120, 20), (255, 80, 10), (255, 160, 30), (255, 200, 50)]
+        },
+        "snow": {
+            "freq": 4, "y": -8.0, "vy_range": (0.8, 1.8), "vx_range": (-0.6, 0.6),
+            "life_range": (200, 320), "size_range": (2, 5), "rot_range": (0.02, 0.02),
+            "colors": [(210, 230, 255)]
+        },
+        "bubbles": {
+            "freq": 6, "y": "H+10", "vy_range": (-1.4, -0.7), "vx_range": (-0.4, 0.4),
+            "life_range": (120, 200), "size_range": (3, 8),
+            "colors": [(60, 180, 255), (80, 200, 255), (100, 220, 255)]
+        },
+        "sand": {
+            "freq": 2, "x_range": (0, "W"), "y_range": (100, "H-50"), "vy_range": (-0.3, 0.3),
+            "vx_factory": lambda x: random.uniform(2.5, 4.5) * (-1 if x > 0 else 1),
+            "life_range": (40, 90), "size_range": (1, 3),
+            "colors": [(200, 170, 80), (220, 190, 100), (180, 150, 60)]
+        },
+        "sparks": {
+            "freq": 4, "y_range": ("H//2", "H"), "vy_range": (-3, -0.5), "vx_range": (-3, 3),
+            "life_range": (20, 45), "size_range": (1, 3), "color_from_world": 5
+        },
+        "acid": {
+            "freq": 5, "y": -8.0, "vy_range": (1.8, 3.2), "vx_range": (-0.5, 0.5),
+            "life_range": (80, 140), "size_range": (2, 4), "colors": [(60, 220, 80)]
+        },
+        "blood": {
+            "freq": 7, "y": -8.0, "vy_range": (2.0, 3.5), "vx_range": (-0.5, 0.5),
+            "life_range": (80, 150), "size_range": (2, 4), "colors": [(180, 10, 30)]
+        },
+        "crystal": {
+            "freq": 8, "y_range": (0, "H"), "vy_range": (-1, 1), "vx_range": (-1, 1),
+            "life_range": (30, 60), "size_range": (3, 7), "rot_range": (0.1, 0.1),
+            "color_from_world": 5
+        },
+        "ash": {
+            "freq": 3, "y": -8.0, "vy_range": (0.5, 1.5), "vx_range": (-1.2, 1.2),
+            "life_range": (140, 240), "size_range": (2, 5), "rot_range": (0.01, 0.01),
+            "colors": [(160, 140, 130)]
+        },
+        "dust": {
+            "freq": 4, "y_range": ("H//2", "H"), "vy_range": (-1, 0.5), "vx_range": (-2, 2),
+            "life_range": (60, 120), "size_range": (1, 3), "colors": [(210, 190, 140)]
+        },
+        "glitch": {
+            "freq": 6, "y_range": (0, "H"), "vy_range": (-2, 2), "vx_range": (-5, 5),
+            "life_range": (8, 18), "size_range": (1, 3), "color_from_world": 5
+        },
+        "sparkle": {
+            "freq": 3, "y_range": (0, "H"), "vy_range": (-1.2, -0.2), "vx_range": (-0.5, 0.5),
+            "life_range": (25, 55), "size_range": (2, 5), "rot_range": (0.15, 0.15),
+            "color_factory": lambda: hsv(random.random(), 0.7, 1.0)
+        },
+        "divine": {
+            "freq": 4, "y_range": (0, "H"), "vy_range": (-0.5, 0.5), "vx_range": (0, 0),
+            "life_range": (40, 80), "size_range": (3, 8), "rot_range": (0.08, 0.08),
+            "colors": [(255, 255, 255)]
+        }
+    }
+
     def __init__(self):
         self.drops=[]
         self.t=0
@@ -510,6 +666,49 @@ class Weather:
             self.drops.append({"x":float(x),"y":float(y),"vx":0,"vy":random.uniform(-0.5,0.5),
                                "life":random.randint(40,80),"ml":80,
                                "type":wtype,"c":c,"s":random.randint(3,8),"rot":random.uniform(0,6.28),"rspd":0.08})
+        wtype = WT[world_idx % 20][7]
+        if wtype == "none" or wtype not in self.EFFECTS:
+            return
+
+        effect = self.EFFECTS[wtype]
+        if self.t % effect["freq"] != 0:
+            return
+
+        def _eval_pos(val):
+            if isinstance(val, str): return eval(val)
+            return val
+
+        x = random.randint(0, W)
+        if "x_range" in effect:
+            x = random.choice([_eval_pos(p) for p in effect["x_range"]])
+
+        y = effect.get("y", -10.0)
+        if "y_range" in effect:
+            y_min, y_max = [_eval_pos(p) for p in effect["y_range"]]
+            y = random.randint(y_min, y_max)
+
+        vx = random.uniform(*effect.get("vx_range", (-1, 1)))
+        if "vx_factory" in effect:
+            vx = effect["vx_factory"](x)
+
+        vy = random.uniform(*effect.get("vy_range", (1, 2)))
+        life = random.randint(*effect["life_range"])
+        size = random.randint(*effect.get("size_range", (2, 4)))
+        rspd = random.uniform(*effect.get("rot_range", (0, 0)))
+
+        if "color_factory" in effect:
+            color = effect["color_factory"]()
+        elif "color_from_world" in effect:
+            color = WT[world_idx % 20][effect["color_from_world"]]
+        else:
+            color = random.choice(effect["colors"])
+
+        self.drops.append({
+            "x": float(x), "y": float(y), "vx": vx, "vy": vy,
+            "life": life, "ml": effect["life_range"][1], "type": wtype,
+            "c": color, "rot": random.uniform(0, 6.28), "rspd": rspd, "s": size
+        })
+
         # Trim
         if len(self.drops)>400: self.drops=self.drops[-400:]
 
@@ -519,7 +718,7 @@ class Weather:
             d["x"]+=d["vx"]; d["y"]+=d["vy"]; d["life"]-=1
             d["rot"]+=d["rspd"]
             if d["life"]<=0: continue
-            alive.append(d)
+            
             t=d["life"]/d["ml"]; a=int(200*t); s=d["s"]; c=d["c"]
             tp=d["type"]
             if tp=="leaves":
@@ -554,6 +753,8 @@ class Weather:
                     ex2=s*2+int(math.cos(ang)*s*1.5); ey2=s*2+int(math.sin(ang)*s*1.5)
                     pygame.draw.line(cs,(*c,a),(s*2,s*2),(ex2,ey2),max(1,s//3))
                 surf.blit(cs,(int(d["x"])-s*2,int(d["y"])-s*2))
+            
+            alive.append(d)
         self.drops=alive
 
 weather = Weather()
@@ -776,6 +977,7 @@ class Platform:
         self.prev_rect=pygame.Rect(x,y,w,h)
         self.world_idx=world_idx
         self.style=WTHEME(world_idx)[9]
+        self.style=WT[world_idx%20][9]
         self.crack_pts=[(random.randint(8,max(9,w-8)),random.randint(2,max(3,h-2))) for _ in range(5)]
         # Moving path trail points
         self.path_pts=[]
@@ -1251,6 +1453,7 @@ class Player:
     def update(self, platforms, dx, jump, dash, emotion_profile=None, skills=None):
         emotion_profile = emotion_profile or {}
         skills = skills or SkillTree()
+
         self.t+=1
         if self.invincible>0: self.invincible-=1
         if self.dash_t>0: self.dash_t-=1
@@ -1331,6 +1534,9 @@ class Player:
         self.rect.x=clamp(self.rect.x,20,W-40)
         self._res_x(platforms)
         self.rect.y+=int(self.vy)
+        if self.rect.y < 0:
+            self.rect.y = 0
+            if self.vy < 0: self.vy = 0
         self.on_ground=False
         landed=self._res_y(platforms)
 
@@ -1930,6 +2136,9 @@ def draw_hud(surf, idx, lives, tick, coins_total, coins_got, combo, dash_t, time
     event=WorldEventSystem(meta)
     if event.has_major_challenge:
         draw_text(surf,event.challenge_name,(W//2,50),lerpC(acc,(255,255,255),0.35),F_TINY,center=True)
+    wname=WT[idx%20][6]
+    draw_text(surf,f"WORLD {idx+1:02d}/20  ·  {wname}",(W//2,7),acc,F_MD,center=True)
+    draw_text(surf,name,(W//2,33),(175,185,215),F_TINY,center=True)
 
     # Stats
     draw_text(surf,f"BEST: W{SD['best']+1}",(24,7),(155,165,235),F_TINY)
@@ -2133,49 +2342,670 @@ def draw_pause(surf, world_idx):
 
     return btns  # [resume, settings, restart, menu]
 
-def draw_settings_screen(surf):
-    t=pygame.time.get_ticks()/1000.0
-    theme=SETTINGS.get("menu_theme")
-    base=(16,4,32) if theme!="bright_theme" else (10,22,34)
-    accent=(166,88,255) if SETTINGS.get("aura")=="purple_dream" else (90,180,255)
-    for y in range(H):
-        surf.fill(lerpC(base,(4,2,12),y/H),(0,y,W,1))
-    for i in range(7):
-        x=int((i*191+t*18)%W)
-        y=int(80+i*72+math.sin(t+i)*18)
-        circ(surf,accent,(x,y),3+i%3,90)
+# ═══════════════════════════════════════════════════════════════
+#  SETTINGS SCREEN  (fully interactive, premium UI)
+# ═══════════════════════════════════════════════════════════════
+class SettingsScreen:
+    TABS = ["GAMEPLAY", "GRAPHICS", "AUDIO", "CONTROLS", "YOUR JOURNEY", "ACCESSIBILITY", "DATA"]
 
-    title=outlined("EMOTIONAL SETTINGS",F_XL,accent,(0,0,0),3)
-    surf.blit(title,(W//2-title.get_width()//2,34))
-    draw_text(surf,"Customize how you experience emotions, memories, and worlds.",
-              (W//2,102),(190,190,230),F_SUB,center=True)
+    ROWS = {
+        "GAMEPLAY": [
+            ("difficulty",      "Difficulty",       "cycle",  ["relaxed","normal","challenge"]),
+            ("assist_mode",     "Assist Mode",      "toggle", None),
+            ("auto_dash",       "Auto Dash",        "toggle", None),
+            ("screen_shake",    "Screen Shake",     "toggle", None),
+            ("game_speed",      "Game Speed",       "slider", (50,150)),
+            ("checkpoint_assist","Checkpoint Assist","toggle", None),
+        ],
+        "GRAPHICS": [
+            ("fullscreen",      "Fullscreen",       "toggle", None),
+            ("resolution",      "Resolution",       "cycle",  ["1280x720", "1600x900", "1920x1080"]),
+            ("pixel_art_mode",  "Pixel Art Mode",   "toggle", None),
+            ("particle_quality","Particle Quality", "cycle",  ["low","medium","high"]),
+            ("lighting_effects","Lighting Effects", "toggle", None),
+            ("brightness",      "Brightness",       "slider", (0,100)),
+            ("screen_effects",  "Screen Effects",   "toggle", None),
+            ("fps_display",     "FPS Display",      "toggle", None),
+        ],
+        "AUDIO": [
+            ("mute_all",        "Mute All",         "toggle", None),
+            ("master_volume",   "Master Volume",    "slider", (0,100)),
+            ("music_volume",    "Music Volume",     "slider", (0,100)),
+            ("sfx_volume",      "Sound Effects",    "slider", (0,100)),
+            ("ambient_volume",  "Environment Vol",  "slider", (0,100)),
+            ("emotion_music",   "Emotion Music",    "toggle", None),
+            ("environment_sounds","Environment Sounds","toggle",None),
+        ],
+        "CONTROLS": [
+            ("key_left",        "Move Left",        "keybind",None),
+            ("key_right",       "Move Right",       "keybind",None),
+            ("key_jump",        "Jump",             "keybind",None),
+            ("key_dash",        "Dash",             "keybind",None),
+            ("key_skill",       "Skill",            "keybind",None),
+            ("key_pause",       "Pause",            "keybind",None),
+            ("key_interact",    "Interact",         "keybind",None),
+            ("controller_support","Controller Support","toggle",None),
+            ("controller_vibration","Controller Vibrate","toggle",None),
+            ("mouse_sensitivity","Mouse Sensitivity","slider",(0,100)),
+        ],
+        "YOUR JOURNEY": [
+            ("emotion_intensity","Emotion Intensity","cycle",["low","medium","high"]),
+            ("aura",            "Character Aura",   "cycle",  ["purple_dream","blue_calm","red_courage","green_hope","gold_balance"]),
+            ("dash_effect",     "Dash Trail",       "cycle",  ["shadow_trail","star_trail","heart_energy","lightning_trail"]),
+            ("focus_mode",      "Focus Mode",       "toggle", None),
+            ("dream_mode",      "Dream Mode",       "toggle", None),
+            ("color_theme",     "Color Theme",      "cycle",  ["dream_theme","dark_theme","bright_theme","emotional_core"]),
+        ],
+        "ACCESSIBILITY": [
+            ("reduce_motion",   "Reduce Motion",    "toggle", None),
+            ("color_blind_mode","Color Blind Mode", "toggle", None),
+            ("high_contrast",   "High Contrast",    "toggle", None),
+            ("text_size",       "Text Size",        "cycle",  ["small","medium","large"]),
+        ],
+        "DATA": [
+            ("__save_hdr",      "Progress",         "header", None),
+            ("__save_progress", "Save Progress",    "button", (100,200,100)),
+            ("__load_progress", "Load Progress",    "button", (100,100,250)),
+            ("__restore_defaults","Restore Default Settings","button",(180,140,60)),
+            ("__save_hdr2",     "Danger Zone",      "header", None),
+            ("__reset_progress","Reset All Progress","button",(200,40,40)),
+        ],
+    }
 
-    panel=pygame.Surface((980,455),pygame.SRCALPHA)
-    panel.fill((5,6,18,215))
-    pygame.draw.rect(panel,(*accent,120),(0,0,980,455),2,border_radius=12)
-    surf.blit(panel,(150,145))
+    AURA_COLS = {
+        "purple_dream":  (166,88,255),
+        "blue_calm":     (60,160,255),
+        "red_courage":   (255,60,60),
+        "green_hope":    (50,220,100),
+        "gold_balance":  (255,200,50),
+    }
 
-    rows=[
-        ("Gameplay", f"Difficulty: {SETTINGS.get('difficulty').upper()}   Assist: {'ON' if SETTINGS.get('assist_mode') else 'OFF'}   Auto Dash: {'ON' if SETTINGS.get('auto_dash') else 'OFF'}"),
-        ("Graphics", f"Pixel Art: {'ON' if SETTINGS.get('pixel_art_mode') else 'OFF'}   Particles: {SETTINGS.get('particle_quality').upper()}   Background: {SETTINGS.get('background_effects').upper()}"),
-        ("Audio", f"Master {SETTINGS.get('master_volume')}   Music {SETTINGS.get('music_volume')}   SFX {SETTINGS.get('sfx_volume')}   Emotion Music: {'ON' if SETTINGS.get('emotion_music') else 'OFF'}"),
-        ("Controls", "A/Left Move Left   D/Right Move Right   Space Jump   Shift Dash   E Skill"),
-        ("Accessibility", f"Color: {SETTINGS.get('color_mode')}   Text: {SETTINGS.get('text_size')}   Reduce Motion: {'ON' if SETTINGS.get('reduce_motion') else 'OFF'}   Flash: {'ON' if SETTINGS.get('flash_effects') else 'OFF'}"),
-        ("Data", f"Completed: {sum(1 for x in SD['cleared'] if x)}/{TOTAL_LEVELS}   Stars: {SD.get('stars',0)}/300   Emotions: {len(SD.get('emotions',[]))}/10"),
-        ("Your Journey", f"Intensity: {SETTINGS.get('emotion_intensity').upper()}   Focus: {'ON' if SETTINGS.get('focus_mode') else 'OFF'}   Dream: {'ON' if SETTINGS.get('dream_mode') else 'OFF'}   Aura: {SETTINGS.get('aura').replace('_',' ').title()}"),
-    ]
-    for i,(heading,body) in enumerate(rows):
-        y=170+i*58
-        draw_text(surf,heading,(190,y),accent,F_MD)
-        draw_text(surf,body,(370,y+4),(205,210,235),F_TINY)
+    def __init__(self):
+        self.selected_tab  = 0
+        self.hover_key     = None
+        self.capture_key   = None   # key currently being rebound
+        self.confirm_reset = False  # show danger confirmation?
+        self.reset_hold_time = 0.0
+        self.confirm_defaults=False
+        self._tick         = 0
+        self.scroll        = 0.0
+        self.tab_anim      = [0.0]*len(self.TABS)
+        self.save_flash    = 0      # frames to show "SAVED" message
+        self._drag_key     = None   # slider being dragged
+        self._drag_start   = 0
+        self._drag_val0    = 0
+        # ambient particles for settings bg
+        self._particles    = []
+        self._spawn_particles()
 
-    hint="1 Difficulty  2 Assist  3 Auto Dash  4 Shake  5 Focus  6 Dream  7 Aura  8 Particles  9 Intensity"
-    draw_text(surf,hint,(W//2,622),(150,160,210),F_TINY,center=True)
-    back=pygame.Rect(W//2-120,655,240,42)
-    pygame.draw.rect(surf,lerpC(accent,(0,0,0),0.45),back,border_radius=10)
-    pygame.draw.rect(surf,(*accent,150),back,1,border_radius=10)
-    draw_text(surf,"BACK",(back.centerx,back.y+10),(255,255,255),F_MD,center=True)
-    return back
+    # ── helpers ──────────────────────────────────────────────────
+    def _spawn_particles(self):
+        self._particles=[]
+        for _ in range(60):
+            self._particles.append({
+                "x": random.uniform(0,W),
+                "y": random.uniform(0,H),
+                "vx": random.uniform(-0.4,0.4),
+                "vy": random.uniform(-0.55,-0.08),
+                "r":  random.uniform(1.2,4.0),
+                "life": random.uniform(0,1),
+            })
+
+    def _get_accent(self):
+        aura=SETTINGS.get("aura","purple_dream")
+        return self.AURA_COLS.get(aura,(166,88,255))
+
+    def _fmt_key(self, raw):
+        """Convert pygame key constant to display name."""
+        if isinstance(raw,int):
+            name=pygame.key.name(raw)
+            return name.upper().replace(" ","_")
+        return str(raw).upper()
+
+    def _get_val(self,key):
+        return SETTINGS.get(key)
+
+    def _set_val(self,key,val):
+        SETTINGS.set(key,val)
+        self.save_flash=90
+
+    def _cycle(self,key,opts):
+        cur=self._get_val(key)
+        try: idx=opts.index(cur)
+        except ValueError: idx=0
+        self._set_val(key, opts[(idx+1)%len(opts)])
+
+    def _cycle_back(self,key,opts):
+        cur=self._get_val(key)
+        try: idx=opts.index(cur)
+        except ValueError: idx=0
+        self._set_val(key, opts[(idx-1)%len(opts)])
+
+    def _tab_rows(self):
+        return self.ROWS[self.TABS[self.selected_tab]]
+
+    # ── row geometry ─────────────────────────────────────────────
+    ROW_H    = 54
+    PANEL_X  = 90
+    PANEL_W  = W-180
+    PANEL_Y  = 158   # top of scrollable area
+    PANEL_VH = H-220 # visible height
+
+    def _row_rect(self, i):
+        """Rect for row i (in screen coords, accounting for scroll)."""
+        y = self.PANEL_Y + int(i*self.ROW_H - self.scroll)
+        return pygame.Rect(self.PANEL_X, y, self.PANEL_W, self.ROW_H-4)
+
+    def _widget_rect(self, row_rect):
+        """Right-hand widget area inside a row rect."""
+        return pygame.Rect(row_rect.right-370, row_rect.y+6, 360, row_rect.height-12)
+
+    # ── slider hit geometry ───────────────────────────────────────
+    SLIDER_TRK_W = 260
+    def _slider_rect(self, wr):
+        return pygame.Rect(wr.x+4, wr.y+wr.height//2-6, self.SLIDER_TRK_W, 12)
+
+    # ── input ────────────────────────────────────────────────────
+    def handle_event(self, e):
+        """Return True if the event was consumed (don't pass to game)."""
+        t=pygame.time.get_ticks()/1000.0
+        mx,my=get_scaled_mouse_pos()
+
+        # ── key-capture mode ──
+        if self.capture_key is not None:
+            if e.type==pygame.KEYDOWN:
+                if e.key!=pygame.K_ESCAPE:
+                    self._set_val(self.capture_key, e.key)
+                self.capture_key=None
+            return True
+
+        # ── confirm dialogs ──
+        if self.confirm_reset:
+            # We don't use this anymore, we use hold_reset_time instead
+            self.confirm_reset=False
+            return True
+
+        if self.confirm_defaults:
+            if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
+                cancel_r=pygame.Rect(W//2-160,H//2+50,140,44)
+                do_r    =pygame.Rect(W//2+20, H//2+50,140,44)
+                if do_r.collidepoint(mx,my):
+                    self._do_restore_defaults()
+                self.confirm_defaults=False
+            return True
+
+        # ── tab clicks ──
+        if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
+            tab_rects=self._tab_rects()
+            for i,tr in enumerate(tab_rects):
+                if tr.collidepoint(mx,my):
+                    self.selected_tab=i
+                    self.scroll=0
+                    return True
+
+        # ── slider drag start ──
+        if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
+            rows=self._tab_rows()
+            for i,(key,label,rtype,opts) in enumerate(rows):
+                rr=self._row_rect(i)
+                if not rr.colliderect((0,self.PANEL_Y,W,self.PANEL_VH)): continue
+                wr=self._widget_rect(rr)
+                if rtype=="slider" and wr.collidepoint(mx,my):
+                    sr=self._slider_rect(wr)
+                    self._drag_key=key
+                    self._drag_opts=opts
+                    self._drag_x0=sr.x
+                    self._drag_w=sr.width
+                    self._update_slider_from_mouse(mx,sr,opts)
+                    return True
+
+        # ── slider drag end ──
+        if e.type==pygame.MOUSEBUTTONUP and e.button==1:
+            self._drag_key=None
+            self.reset_hold_time = 0.0
+
+        # ── slider drag motion ──
+        if e.type==pygame.MOUSEMOTION and self._drag_key:
+            rows=self._tab_rows()
+            for i,(key,label,rtype,opts) in enumerate(rows):
+                if key!=self._drag_key: continue
+                rr=self._row_rect(i)
+                wr=self._widget_rect(rr)
+                sr=self._slider_rect(wr)
+                self._update_slider_from_mouse(mx,sr,opts)
+                return True
+
+        # ── scroll ──
+        if e.type==pygame.MOUSEWHEEL:
+            self.scroll=max(0.0, self.scroll - e.y*30)
+            return True
+
+        # ── row clicks ──
+        if e.type==pygame.MOUSEBUTTONDOWN and e.button in (1,3):
+            rows=self._tab_rows()
+            for i,(key,label,rtype,opts) in enumerate(rows):
+                rr=self._row_rect(i)
+                if not (self.PANEL_Y<=rr.y<=self.PANEL_Y+self.PANEL_VH): continue
+                if not rr.collidepoint(mx,my): continue
+                wr=self._widget_rect(rr)
+                if rtype=="toggle":
+                    cur=self._get_val(key)
+                    self._set_val(key, not cur)
+                    return True
+                if rtype=="cycle":
+                    # left arrow or right click = go back
+                    cx=wr.x+wr.width//2
+                    if e.button==3 or mx<cx:
+                        self._cycle_back(key,opts)
+                    else:
+                        self._cycle(key,opts)
+                    return True
+                if rtype=="keybind":
+                    self.capture_key=key
+                    return True
+                if rtype=="button":
+                    if key=="__reset_progress":
+                        self.reset_hold_time = 0.01 # start hold
+                    elif key=="__restore_defaults":
+                        self.confirm_defaults=True
+                    elif key=="__save_progress":
+                        save_game(SD)
+                        self.save_flash=120
+                    elif key=="__load_progress":
+                        new_sd = load_save()
+                        SD.clear()
+                        SD.update(new_sd)
+                        self.save_flash=120
+                    return True
+        return False
+
+    def _update_slider_from_mouse(self, mx, sr, opts):
+        lo,hi=opts
+        frac=clamp((mx-sr.x)/max(1,sr.width),0.0,1.0)
+        val=int(round(lo+(hi-lo)*frac))
+        self._set_val(self._drag_key, val)
+
+    def _do_reset(self):
+        SD.update({"level":0,"best":0,"deaths":0,"runs":0,"coins":0,
+                   "cleared":[False]*TOTAL_LEVELS,"best_times":[0]*TOTAL_LEVELS,
+                   "completed_levels":[],"stars":0,"emotions":[]})
+        save_game(SD)
+        self.save_flash=120
+
+    def _do_restore_defaults(self):
+        from src.settings.settings_manager import DEFAULT_SETTINGS
+        for k,v in DEFAULT_SETTINGS.items():
+            if k != "settings_version":
+                SETTINGS.set(k,v)
+        self.save_flash=90
+
+    # ── tab rect geometry ─────────────────────────────────────────
+    def _tab_rects(self):
+        n=len(self.TABS)
+        tw=(W-100)//n
+        rects=[]
+        for i in range(n):
+            rects.append(pygame.Rect(50+i*tw, 96, tw-6, 36))
+        return rects
+
+    # ── update (call every frame) ─────────────────────────────────
+    def update(self):
+        self._tick+=1
+        
+        # Reset hold logic
+        if getattr(self, "reset_hold_time", 0) > 0:
+            if pygame.mouse.get_pressed()[0]:
+                self.reset_hold_time += 1.0/60.0
+                if self.reset_hold_time >= 3.0:
+                    self._do_reset()
+                    self.reset_hold_time = 0.0
+            else:
+                self.reset_hold_time = 0.0
+                
+        # animate tab glow
+        for i in range(len(self.TABS)):
+            target=1.0 if i==self.selected_tab else 0.0
+            self._tab_anim_val=getattr(self,"_tab_anim",None)
+            self.tab_anim[i]=lerp(self.tab_anim[i],target,0.12)
+        # drift particles
+        for p in self._particles:
+            p["x"]+=p["vx"]; p["y"]+=p["vy"]
+            p["life"]=min(1.0,p["life"]+0.007)
+            if p["y"]<-8:
+                p["y"]=H+4; p["x"]=random.uniform(0,W); p["life"]=0.0
+        if self.save_flash>0: self.save_flash-=1
+
+    # ── draw ─────────────────────────────────────────────────────
+    def draw(self, surf):
+        self.update()
+        t=self._tick*0.016
+        accent=self._get_accent()
+        mx,my=get_scaled_mouse_pos()
+
+        # ── background gradient ──
+        aura=SETTINGS.get("aura","purple_dream")
+        bg_tops={"purple_dream":(14,4,28),"blue_calm":(4,12,28),
+                 "red_courage":(22,4,4),"green_hope":(4,18,8),"gold_balance":(22,16,4)}
+        bg_bots={"purple_dream":(4,2,12),"blue_calm":(2,4,14),
+                 "red_courage":(10,2,2),"green_hope":(2,8,4),"gold_balance":(10,8,2)}
+        top=bg_tops.get(aura,(14,4,28))
+        bot=bg_bots.get(aura,(4,2,12))
+        for y in range(0,H,2):
+            surf.fill(lerpC(top,bot,y/H),(0,y,W,2))
+
+        # ── ambient particles ──
+        intensity=SETTINGS.get("emotion_intensity","medium")
+        pc=18 if intensity=="low" else (35 if intensity=="medium" else 55)
+        for p in self._particles[:pc]:
+            a=int(clamp(p["life"]*180,0,180))
+            circ(surf,accent,(p["x"],p["y"]),p["r"],a)
+
+        # soft glow behind title
+        for ring in range(5,0,-1):
+            gs=pygame.Surface((500,80),pygame.SRCALPHA)
+            pygame.draw.ellipse(gs,(*accent,ring*8),(0,0,500,80))
+            surf.blit(gs,(W//2-250,22))
+
+        # ── title ──
+        title=outlined("EMOTIONAL SETTINGS",F_XL,accent,(0,0,0),3)
+        surf.blit(title,(W//2-title.get_width()//2,28))
+
+        # ── tabs ──
+        tab_rects=self._tab_rects()
+        for i,(tab,tr) in enumerate(zip(self.TABS,tab_rects)):
+            hov=tr.collidepoint(mx,my)
+            sel=i==self.selected_tab
+            glow=self.tab_anim[i]
+            # glow halo
+            if glow>0.05:
+                gs=pygame.Surface((tr.w+12,tr.h+12),pygame.SRCALPHA)
+                pygame.draw.rect(gs,(*accent,int(glow*80)),(0,0,tr.w+12,tr.h+12),border_radius=10)
+                surf.blit(gs,(tr.x-6,tr.y-6))
+            fill=lerpC(lerpC((20,16,40),accent,glow*0.35),accent,0.2 if hov else 0)
+            pygame.draw.rect(surf,fill,tr,border_radius=8)
+            bord=(*lerpC(accent,(255,255,255),glow*0.5),int(80+glow*175))
+            pygame.draw.rect(surf,bord,tr,1+(1 if sel else 0),border_radius=8)
+            lc=lerpC((160,155,200),(255,255,255),glow*0.8+(0.2 if hov else 0))
+            ts=F_SM.render(tab,True,lc)
+            surf.blit(ts,(tr.x+tr.w//2-ts.get_width()//2,tr.y+tr.h//2-ts.get_height()//2))
+
+        # ── panel bg ──
+        panel=pygame.Surface((self.PANEL_W+2,self.PANEL_VH+2),pygame.SRCALPHA)
+        panel.fill((5,6,18,210))
+        pygame.draw.rect(panel,(*accent,70),(0,0,self.PANEL_W+2,self.PANEL_VH+2),1,border_radius=12)
+        surf.blit(panel,(self.PANEL_X-1,self.PANEL_Y-1))
+
+        # ── clip drawing to panel area ──
+        clip=pygame.Rect(self.PANEL_X,self.PANEL_Y,self.PANEL_W,self.PANEL_VH)
+        surf.set_clip(clip)
+
+        rows=self._tab_rows()
+        max_scroll=max(0.0,len(rows)*self.ROW_H-self.PANEL_VH+8)
+        self.scroll=clamp(self.scroll,0.0,max_scroll)
+
+        for i,(key,label,rtype,opts) in enumerate(rows):
+            rr=self._row_rect(i)
+            if rr.bottom<self.PANEL_Y or rr.top>self.PANEL_Y+self.PANEL_VH: continue
+
+            hov=rr.collidepoint(mx,my) and clip.collidepoint(mx,my)
+            if key==self.hover_key and not hov: self.hover_key=None
+            if hov: self.hover_key=key
+
+            # ── header row ──
+            if rtype=="header":
+                hy=rr.y+rr.height//2
+                pygame.draw.line(surf,(*accent,55),(self.PANEL_X+12,hy),(self.PANEL_X+self.PANEL_W-12,hy),1)
+                hs=F_SM.render(label.upper(),True,lerpC(accent,(255,255,255),0.5))
+                surf.blit(hs,(self.PANEL_X+self.PANEL_W//2-hs.get_width()//2,rr.y+8))
+                continue
+
+            # row background
+            if hov:
+                rb=pygame.Surface((rr.w,rr.h),pygame.SRCALPHA)
+                rb.fill((*accent,22))
+                surf.blit(rb,(rr.x,rr.y))
+                pygame.draw.rect(surf,(*accent,80),rr,1,border_radius=8)
+
+            # label
+            lc2=(210,215,240) if not hov else (255,255,255)
+            ls=F_SM.render(label,True,lc2)
+            surf.blit(ls,(rr.x+20,rr.y+rr.height//2-ls.get_height()//2))
+
+            wr=self._widget_rect(rr)
+
+            # ── TOGGLE ──
+            if rtype=="toggle":
+                val=self._get_val(key)
+                on_c=accent if val else (80,80,100)
+                pill_w,pill_h=76,30
+                px=wr.right-pill_w; py=wr.y+wr.height//2-pill_h//2
+                pill_r=pygame.Rect(px,py,pill_w,pill_h)
+                # glow
+                if val:
+                    gs=pygame.Surface((pill_w+8,pill_h+8),pygame.SRCALPHA)
+                    pygame.draw.rect(gs,(*on_c,50),(0,0,pill_w+8,pill_h+8),border_radius=pill_h)
+                    surf.blit(gs,(px-4,py-4))
+                pygame.draw.rect(surf,lerpC(on_c,(0,0,0),0.45),pill_r,border_radius=pill_h)
+                pygame.draw.rect(surf,(*on_c,180),pill_r,2,border_radius=pill_h)
+                knob_x=px+pill_w-16 if val else px+10
+                pygame.draw.circle(surf,(255,255,255),(knob_x,py+pill_h//2),10)
+                ts2=F_TINY.render("ON" if val else "OFF",True,(255,255,255) if val else (120,120,150))
+                ox=px+12 if val else px+28
+                surf.blit(ts2,(ox,py+pill_h//2-ts2.get_height()//2))
+
+            # ── CYCLE ──
+            elif rtype=="cycle":
+                val=self._get_val(key)
+                if val is None: val=opts[0]
+                disp=str(val).replace("_"," ").upper()
+                bw=240; bh=30
+                bx=wr.right-bw; by=wr.y+wr.height//2-bh//2
+                # left arrow
+                la=F_MD.render("◀",True,lerpC((80,80,120),accent,0.7))
+                surf.blit(la,(bx+4,by+bh//2-la.get_height()//2))
+                # right arrow
+                ra=F_MD.render("▶",True,lerpC((80,80,120),accent,0.7))
+                surf.blit(ra,(bx+bw-ra.get_width()-4,by+bh//2-ra.get_height()//2))
+                # value bg
+                vr=pygame.Rect(bx+30,by,bw-60,bh)
+                pygame.draw.rect(surf,lerpC(accent,(0,0,0),0.55),vr,border_radius=6)
+                pygame.draw.rect(surf,(*accent,120),vr,1,border_radius=6)
+                vs=F_SM.render(disp,True,(255,255,255))
+                surf.blit(vs,(vr.x+vr.w//2-vs.get_width()//2,vr.y+vr.h//2-vs.get_height()//2))
+
+            # ── SLIDER ──
+            elif rtype=="slider":
+                lo,hi=opts
+                val=self._get_val(key)
+                if val is None: val=lo
+                val=clamp(int(val),lo,hi)
+                frac=(val-lo)/max(1,hi-lo)
+                sr=self._slider_rect(wr)
+                # track
+                pygame.draw.rect(surf,(40,38,60),sr,border_radius=6)
+                # filled portion
+                fw=int(sr.width*frac)
+                if fw>0:
+                    fr=pygame.Rect(sr.x,sr.y,fw,sr.height)
+                    pygame.draw.rect(surf,lerpC(accent,(255,255,255),0.15),fr,border_radius=6)
+                # knob
+                kx=sr.x+fw
+                pygame.draw.circle(surf,(255,255,255),(kx,sr.y+sr.height//2),10)
+                pygame.draw.circle(surf,accent,(kx,sr.y+sr.height//2),8)
+                # value label
+                vs=F_TINY.render(str(val),True,(200,200,220))
+                surf.blit(vs,(sr.right+14,sr.y+sr.height//2-vs.get_height()//2))
+
+            # ── KEYBIND ──
+            elif rtype=="keybind":
+                capturing=self.capture_key==key
+                val=self._get_val(key)
+                disp="PRESS KEY…" if capturing else self._fmt_key(val)
+                chip_c=(200,40,40) if capturing else accent
+                cw=160; ch=30
+                cx2=wr.right-cw; cy2=wr.y+wr.height//2-ch//2
+                chip_r=pygame.Rect(cx2,cy2,cw,ch)
+                if capturing:
+                    pulse=(math.sin(self._tick*0.18)+1)/2
+                    pc2=lerpC((200,40,40),(255,80,80),pulse)
+                    pygame.draw.rect(surf,pc2,chip_r,border_radius=6)
+                else:
+                    pygame.draw.rect(surf,lerpC(accent,(0,0,0),0.55),chip_r,border_radius=6)
+                    pygame.draw.rect(surf,(*accent,140),chip_r,1,border_radius=6)
+                cs=F_SM.render(disp,True,(255,255,255))
+                surf.blit(cs,(chip_r.x+chip_r.w//2-cs.get_width()//2,
+                              chip_r.y+chip_r.h//2-cs.get_height()//2))
+
+            # ── ACTION BUTTON ──
+            elif rtype=="button":
+                btn_c=opts if opts else accent
+                bw=260; bh=34
+                bx2=wr.right-bw; by2=wr.y+wr.height//2-bh//2
+                br=pygame.Rect(bx2,by2,bw,bh)
+                hov_btn=br.collidepoint(mx,my) and clip.collidepoint(mx,my)
+                fc=lerpC(btn_c,(0,0,0),0.4 if not hov_btn else 0.2)
+                pygame.draw.rect(surf,fc,br,border_radius=8)
+                
+                # Hold to reset progress bar
+                if key=="__reset_progress" and getattr(self, "reset_hold_time", 0) > 0:
+                    prog = self.reset_hold_time / 3.0
+                    fill_w = int(bw * prog)
+                    if fill_w > 0:
+                        fill_r = pygame.Rect(br.x, br.y, fill_w, br.height)
+                        pygame.draw.rect(surf, (255,100,100), fill_r, border_radius=8)
+                        
+                pygame.draw.rect(surf,(*btn_c,160),br,2,border_radius=8)
+                
+                label_disp = label
+                if key=="__reset_progress" and getattr(self, "reset_hold_time", 0) > 0:
+                    label_disp = "HOLD TO RESET..."
+                
+                bs=F_SM.render(label_disp,True,(255,255,255))
+                surf.blit(bs,(br.x+br.w//2-bs.get_width()//2,br.y+br.h//2-bs.get_height()//2))
+
+        surf.set_clip(None)
+        
+        # ── EMOTIONAL PREVIEW ──
+        if self.TABS[self.selected_tab] in ["YOUR JOURNEY", "ACCESSIBILITY"]:
+            cx, cy = W - 180, H - 180
+            
+            # Glow Aura
+            for ring in range(3, 0, -1):
+                a_surf = pygame.Surface((120+ring*30, 120+ring*30), pygame.SRCALPHA)
+                pygame.draw.circle(a_surf, (*accent, 20), (60+ring*15, 60+ring*15), 60+ring*15)
+                surf.blit(a_surf, (cx - 60 - ring*15, cy - 60 - ring*15))
+                
+            # Mock Player Square
+            pr = pygame.Rect(cx-30, cy-30, 60, 60)
+            pygame.draw.rect(surf, (255,255,255), pr, border_radius=12)
+            pygame.draw.rect(surf, (200,200,200), pr, 2, border_radius=12)
+            
+            # Trail text
+            trail_type = SETTINGS.get("dash_effect", "shadow_trail")
+            ts = F_SM.render(trail_type.replace("_", " ").upper(), True, accent)
+            surf.blit(ts, (cx - ts.get_width()//2, cy + 50))
+            
+            # Focus Mode text
+            if SETTINGS.get("focus_mode"):
+                fs = F_TINY.render("FOCUS MODE ON", True, (255,200,100))
+                surf.blit(fs, (cx - fs.get_width()//2, cy + 75))
+
+        # ── scroll indicator ──
+        if max_scroll>0:
+            bar_h=int(self.PANEL_VH*(self.PANEL_VH/(len(rows)*self.ROW_H+1)))
+            bar_y=self.PANEL_Y+int((self.PANEL_VH-bar_h)*(self.scroll/max_scroll))
+            pygame.draw.rect(surf,(*accent,90),(self.PANEL_X+self.PANEL_W+4,bar_y,4,bar_h),border_radius=2)
+
+        # ── BACK button ──
+        back=pygame.Rect(W//2-110,H-56,220,42)
+        hbk=back.collidepoint(mx,my)
+        pygame.draw.rect(surf,lerpC(accent,(0,0,0),0.45 if not hbk else 0.25),back,border_radius=10)
+        pygame.draw.rect(surf,(*accent,180),back,2,border_radius=10)
+        bks=F_MD.render("◀  BACK",True,(255,255,255))
+        surf.blit(bks,(back.centerx-bks.get_width()//2,back.centery-bks.get_height()//2))
+
+        # ── SAVED flash ──
+        if self.save_flash>0:
+            a=int(255*min(1.0,self.save_flash/30))
+            sfs=F_SM.render("✓  SETTINGS SAVED",True,(*accent,255))
+            sfs.set_alpha(a)
+            surf.blit(sfs,(W-sfs.get_width()-24,H-36))
+
+        # ── DATA tab stats ──
+        if self.TABS[self.selected_tab]=="DATA":
+            stats=[
+                f"Levels Cleared:  {sum(1 for x in SD['cleared'] if x)} / {TOTAL_LEVELS}",
+                f"Stars:           {SD.get('stars',0)} / {TOTAL_LEVELS*3}",
+                f"Emotions Found:  {len(SD.get('emotions',[]))} / 10",
+                f"Total Deaths:    {SD.get('deaths',0)}",
+                f"Total Coins:     {SD.get('coins',0)}",
+                f"Total Runs:      {SD.get('runs',0)}",
+            ]
+            sy=self.PANEL_Y+14
+            for s in stats:
+                ss=F_SM.render(s,True,(180,185,220))
+                surf.blit(ss,(self.PANEL_X+20,sy))
+                sy+=26
+
+        # ── confirmation popups ──
+        if self.confirm_reset:
+            self._draw_confirm(surf,
+                "⚠  RESET ALL PROGRESS?",
+                ["You are about to permanently delete:",
+                 " ✓  Completed Levels",
+                 " ✓  Stars & Coins",
+                 " ✓  Emotional Progress",
+                 " ✓  Skill Unlocks"],
+                "CANCEL","RESET",
+                cancel_c=(60,60,90), do_c=(180,30,30))
+
+        if self.confirm_defaults:
+            self._draw_confirm(surf,
+                "⚠  RESTORE DEFAULT SETTINGS?",
+                ["Audio, Graphics, Controls and",
+                 "Gameplay will be reset.",
+                 "",
+                 "Your save progress is NOT affected."],
+                "CANCEL","RESTORE",
+                cancel_c=(60,60,90), do_c=(120,90,20))
+
+        return back
+
+    def _draw_confirm(self, surf, title, lines, cancel_lbl, do_lbl, cancel_c, do_c):
+        # dim overlay
+        ov=pygame.Surface((W,H),pygame.SRCALPHA)
+        ov.fill((0,0,0,160))
+        surf.blit(ov,(0,0))
+        # panel
+        pw,ph=520,300
+        px,py=W//2-pw//2,H//2-ph//2
+        panel=pygame.Surface((pw,ph),pygame.SRCALPHA)
+        panel.fill((10,8,24,240))
+        pygame.draw.rect(panel,(200,60,60,160),(0,0,pw,ph),2,border_radius=14)
+        surf.blit(panel,(px,py))
+        # title
+        ts=F_MD.render(title,True,(255,80,80))
+        surf.blit(ts,(W//2-ts.get_width()//2,py+18))
+        # lines
+        for i,ln in enumerate(lines):
+            ls=F_SM.render(ln,True,(200,195,230))
+            surf.blit(ls,(W//2-ls.get_width()//2,py+60+i*28))
+        # buttons
+        cancel_r=pygame.Rect(W//2-160,py+ph-58,140,42)
+        do_r    =pygame.Rect(W//2+20, py+ph-58,140,42)
+        pygame.draw.rect(surf,cancel_c,cancel_r,border_radius=8)
+        pygame.draw.rect(surf,do_c,    do_r,    border_radius=8)
+        pygame.draw.rect(surf,(180,180,200),cancel_r,1,border_radius=8)
+        pygame.draw.rect(surf,(255,80,80),  do_r,    1,border_radius=8)
+        cls2=F_MD.render(cancel_lbl,True,(220,220,240))
+        dos=F_MD.render(do_lbl,    True,(255,200,200))
+        surf.blit(cls2,(cancel_r.centerx-cls2.get_width()//2,cancel_r.centery-cls2.get_height()//2))
+        surf.blit(dos, (do_r.centerx-dos.get_width()//2,    do_r.centery-dos.get_height()//2))
+
+
+# ── instantiate global settings screen ───────────────────────────
+settings_screen = SettingsScreen()
+
 
 def cycle_setting(key, values):
     cur=SETTINGS.get(key)
@@ -2184,6 +3014,7 @@ def cycle_setting(key, values):
 
 # ═══════════════════════════════════════════════════════════════
 #  WORLD PROGRESS RING  (shown on menu)
+#  WORLD PROGRESS RING  (shown on menu, 20 segments)
 # ═══════════════════════════════════════════════════════════════
 def draw_progress_ring(surf, cx, cy, r_out, r_in, tick):
     n=TOTAL_LEVELS
@@ -2288,7 +3119,6 @@ def draw_menu(surf, idx, tick):
     # Play button
     btn=pygame.Rect(W//2-162,468,324,58)
     btn_set=pygame.Rect(W//2-122,538,244,38)
-    btn_rst=pygame.Rect(W//2-122,590,244,38)
     for ring in range(6,0,-1):
         gs2=pygame.Surface((btn.w+ring*14,btn.h+ring*10),pygame.SRCALPHA)
         pygame.draw.rect(gs2,(*hsv((t*0.07)%1,0.9,1.0),18),(0,0,btn.w+ring*14,btn.h+ring*10),border_radius=18)
@@ -2303,17 +3133,13 @@ def draw_menu(surf, idx, tick):
     pygame.draw.rect(surf,(78,112,185),btn_set,1,border_radius=8)
     sl=F_SUB.render("⚙  EMOTIONAL SETTINGS",True,(140,175,255))
     surf.blit(sl,(btn_set.centerx-sl.get_width()//2,btn_set.centery-sl.get_height()//2))
-    pygame.draw.rect(surf,(35,12,12),btn_rst,border_radius=8)
-    pygame.draw.rect(surf,(100,35,35),btn_rst,1,border_radius=8)
-    rl=F_SUB.render("↺  RESET ALL PROGRESS",True,(160,70,70))
-    surf.blit(rl,(btn_rst.centerx-rl.get_width()//2,btn_rst.centery-rl.get_height()//2))
     # Bottom line
     ls2=pygame.Surface((W,2),pygame.SRCALPHA)
     for px2 in range(W): ls2.fill((*lc,int(200*math.sin(px2/W*math.pi))),(px2,0,1,2))
     surf.blit(ls2,(0,H-52))
     tg=F_TAG.render(f"{TOTAL_LEVELS} WORLDS · EMOTION JOURNEY · SETTINGS · WEATHER · WORLD THEMES",True,(72,50,50))
     surf.blit(tg,(W//2-tg.get_width()//2,H-24))
-    return btn, btn_set, btn_rst
+    return btn, btn_set
 
 def draw_gameover(surf, death_world=0):
     t=pygame.time.get_ticks()/1000.0
@@ -2459,6 +3285,9 @@ def draw_win(surf):
     surf.blit(et2,(W//2-et2.get_width()//2,H-24))
     return btn2
 
+
+
+
 # ═══════════════════════════════════════════════════════════════
 #  JOYSTICK
 # ═══════════════════════════════════════════════════════════════
@@ -2534,6 +3363,19 @@ class Game:
         self.level_start_time=_time.time()
         SD["best"]=max(SD.get("best",0),idx); save_game(SD)
         intro_card.trigger(idx)
+        
+        if not hasattr(self, "checkpoint_data") or getattr(self, "checkpoint_data", {}).get("level_id") != idx:
+            self.checkpoint_data = {
+                "level_id": idx,
+                "checkpoint_id": 0,
+                "position": (player.rect.centerx, player.rect.centery),
+                "abilities": self.skill_tree.unlocked.copy() if hasattr(self, "skill_tree") else [],
+                "emotion_state": self.emotion_profile.copy() if hasattr(self, "emotion_profile") else {}
+            }
+        elif SETTINGS.get("checkpoint_assist"):
+            player.rect.centerx, player.rect.centery = self.checkpoint_data["position"]
+            if hasattr(self, "skill_tree"): self.skill_tree.unlocked = self.checkpoint_data["abilities"].copy()
+            if hasattr(self, "emotion_profile"): self.emotion_profile = self.checkpoint_data["emotion_state"].copy()
 
     def popup(self, x, y, text, color=(255,255,100)):
         self.popups.append([float(x),float(y),text,color,60])
@@ -2559,17 +3401,16 @@ class Game:
         self.combo=0; self.lives-=1
         if self.lives<=0:
             self.state="GAME_OVER"
-            # Remember which world the player died on so we can restart there
             self.death_world=self.level_idx
             save_game(SD)
         else:
+            self.load_level(self.level_idx)
             player.spawn(*self.start_pos, hit=True); player.world_idx=self.level_idx
 
     def flash(self, color=(255,255,255), strength=200):
         self.flash_alpha=strength; self.flash_color=color
 
     def next_level(self):
-        # Save level time
         elapsed=_time.time()-self.level_start_time
         if SD["best_times"][self.level_idx]==0 or elapsed<SD["best_times"][self.level_idx]:
             SD["best_times"][self.level_idx]=round(elapsed,1)
@@ -2579,6 +3420,7 @@ class Game:
         play(SND_WIN)
         if SETTINGS.get("screen_shake") and not SETTINGS.get("reduce_motion"):
             cam.hit(12)
+        play(SND_WIN)
         self.flash((100,255,200),200)
         ps.burst(player.rect.centerx,player.rect.centery,
                  count=75,color=(100,255,200),size=8,world=self.level_idx)
@@ -2591,40 +3433,37 @@ class Game:
         else:
             SD["level"]=nxt; save_game(SD)
             self.state="LEVEL_COMPLETE"
+            self.load_level(nxt)
 
     def run(self):
         while True:
             self.tick+=1
             clock.tick(FPS)
 
-            # ── MENU ──────────────────────────────────────────
             if self.state=="MENU":
                 screen.fill((0,0,0))
-                btn,btn_set,btn_rst=draw_menu(screen,self.level_idx,self.tick)
+                btn,btn_set=draw_menu(screen,self.level_idx,self.tick)
                 ps.draw(screen)
-                pygame.display.flip()
-                for e in pygame.event.get():
+                flip_display()
+                for e in get_events():
                     if e.type==pygame.QUIT: sys.exit()
                     if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
                         if btn.collidepoint(e.pos):
                             SD["runs"]+=1; save_game(SD); self.state="PLAY"
                         if btn_set.collidepoint(e.pos):
                             self.settings_return_state="MENU"; self.state="SETTINGS"
-                        if btn_rst.collidepoint(e.pos):
-                            SD.update({"level":0,"best":0,"deaths":0,"runs":0,"coins":0,
-                                       "cleared":[False]*TOTAL_LEVELS,"best_times":[0]*TOTAL_LEVELS,
-                                       "completed_levels":[],"stars":0,"emotions":[]})
-                            save_game(SD); self.level_idx=0; self.lives=5; self.load_level(0)
                     if e.type==pygame.KEYDOWN and e.key in (pygame.K_RETURN,pygame.K_SPACE):
                         SD["runs"]+=1; save_game(SD); self.state="PLAY"
                 continue
 
             # ── SETTINGS ─────────────────────────────────────
             if self.state=="SETTINGS":
-                back=draw_settings_screen(screen)
-                pygame.display.flip()
-                for e in pygame.event.get():
+                back=settings_screen.draw(screen)
+                flip_display()
+                for e in get_events():
                     if e.type==pygame.QUIT: sys.exit()
+                    if settings_screen.handle_event(e):
+                        continue
                     if e.type==pygame.KEYDOWN:
                         if e.key in (pygame.K_ESCAPE, pygame.K_b):
                             self.state=self.settings_return_state
@@ -2644,8 +3483,8 @@ class Game:
             # ── GAME OVER ─────────────────────────────────────
             if self.state=="GAME_OVER":
                 screen.fill((0,0,0)); btn=draw_gameover(screen,self.death_world)
-                ps.draw(screen); pygame.display.flip()
-                for e in pygame.event.get():
+                ps.draw(screen); flip_display()
+                for e in get_events():
                     if e.type==pygame.QUIT: sys.exit()
                     if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
                         if btn.collidepoint(e.pos):
@@ -2658,8 +3497,8 @@ class Game:
             # ── LEVEL COMPLETE ───────────────────────────────
             if self.state=="LEVEL_COMPLETE":
                 screen.fill((0,0,0)); btn=draw_level_complete(screen,self.completed_level_idx,self.completed_level_time)
-                ps.draw(screen); pygame.display.flip()
-                for e in pygame.event.get():
+                ps.draw(screen); flip_display()
+                for e in get_events():
                     if e.type==pygame.QUIT: sys.exit()
                     if e.type==pygame.KEYDOWN and e.key in (pygame.K_RETURN,pygame.K_SPACE):
                         if self.pending_next_level>=TOTAL_LEVELS:
@@ -2676,8 +3515,8 @@ class Game:
             # ── WIN ───────────────────────────────────────────
             if self.state=="WIN":
                 screen.fill((0,0,0)); btn=draw_win(screen)
-                ps.draw(screen); pygame.display.flip()
-                for e in pygame.event.get():
+                ps.draw(screen); flip_display()
+                for e in get_events():
                     if e.type==pygame.QUIT: sys.exit()
                     if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
                         if btn.collidepoint(e.pos):
@@ -2692,8 +3531,8 @@ class Game:
             # ── PAUSED ────────────────────────────────────────
             if self.paused:
                 pause_btns=draw_pause(screen,self.level_idx)
-                pygame.display.flip()
-                for e in pygame.event.get():
+                flip_display()
+                for e in get_events():
                     if e.type==pygame.QUIT: sys.exit()
                     if e.type==pygame.KEYDOWN:
                         if e.key==pygame.K_ESCAPE: self.paused=False; play(SND_PAUSE)
@@ -2701,6 +3540,7 @@ class Game:
                         if pause_btns[0].collidepoint(e.pos): self.paused=False; play(SND_PAUSE)
                         elif pause_btns[1].collidepoint(e.pos):
                             self.paused=False; self.settings_return_state="PLAY"; self.state="SETTINGS"
+                            self.paused=False; self.load_level(self.level_idx)
                         elif pause_btns[2].collidepoint(e.pos):
                             self.paused=False; self.load_level(self.level_idx)
                         elif pause_btns[3].collidepoint(e.pos):
@@ -2709,7 +3549,7 @@ class Game:
 
             # ── PLAY ──────────────────────────────────────────
             jump=False; dash=False
-            for e in pygame.event.get():
+            for e in get_events():
                 if e.type==pygame.QUIT: sys.exit()
                 joy.handle(e)
                 if e.type==pygame.KEYDOWN:
@@ -2731,6 +3571,10 @@ class Game:
             speed_scale={"relaxed":0.82,"normal":1.0,"challenge":1.13}.get(SETTINGS.get("difficulty"),1.0)
             if SETTINGS.get("assist_mode"):
                 speed_scale*=0.9
+            
+            # Apply Game Speed Setting
+            game_speed = SETTINGS.get("game_speed", 100) / 100.0
+            speed_scale *= game_speed
             speed_scale*=self.world_events.intensity()
             if self.skill_tree.has("slow_time"):
                 speed_scale*=0.92
@@ -2778,6 +3622,16 @@ class Game:
                         if b in en.bullets: en.bullets.remove(b)
                         break
 
+            # Checkpoint Assist Tracking
+            if self.state == "PLAY" and getattr(player, "on_ground", False) and SETTINGS.get("checkpoint_assist"):
+                last_ckpt = self.checkpoint_data.get("position", (0,0))
+                if player.rect.centerx > last_ckpt[0] + 900:
+                    self.checkpoint_data["position"] = (player.rect.centerx, player.rect.centery)
+                    self.checkpoint_data["checkpoint_id"] = self.checkpoint_data.get("checkpoint_id", 0) + 1
+                    if hasattr(self, "skill_tree"): self.checkpoint_data["abilities"] = self.skill_tree.unlocked.copy()
+                    if hasattr(self, "emotion_profile"): self.checkpoint_data["emotion_state"] = self.emotion_profile.copy()
+                    self.popup(player.rect.centerx, player.rect.y - 40, "CHECKPOINT", (100, 255, 100))
+
             # Portal
             self.portal.update()
             pr=pygame.Rect(self.portal.x-self.portal.r,self.portal.y-self.portal.r,
@@ -2794,6 +3648,7 @@ class Game:
             if self.tick%particle_step==0:
                 wt=WTHEME(self.level_idx)
                 pcount=max(1,int(self.emotion_profile.get("particle",1.0)))
+            if self.tick%9==0:
                 ps.emit(random.randint(0,W),H,count=1,vy=-0.85,life=230,
                         spread=0.4,color=wt[5],size=2,grav=-0.004,fade=True)
                 if pcount>1:
@@ -2846,7 +3701,7 @@ class Game:
             intro_card.draw(screen)
 
             cam.update(); cam.apply(screen)
-            pygame.display.flip()
+            flip_display()
 
 # ═══════════════════════════════════════════════════════════════
 #  LAUNCH
@@ -2854,3 +3709,4 @@ class Game:
 if __name__=="__main__":
     Game().run()
     pygame.quit(); sys.exit()
+# ════════════════════�
