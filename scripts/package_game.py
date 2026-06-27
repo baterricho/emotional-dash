@@ -38,6 +38,8 @@ def main():
         "--windowed",
         "--name",
         build_name,
+        "--hidden-import",
+        "numpy",
         ENTRYPOINT,
     ]
     subprocess.run(command, check=True, cwd=root)

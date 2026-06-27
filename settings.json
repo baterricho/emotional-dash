@@ -6,7 +6,7 @@
   "screen_shake": true,
   "tutorial": true,
   "checkpoint_assist": false,
-  "game_speed": 100,
+  "game_speed": 90,
   "fullscreen": false,
   "resolution": "1600x900",
   "pixel_art_mode": true,
