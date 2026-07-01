@@ -12,7 +12,7 @@
   "platform_style": "crystal",
   "hazards": [],
   "special_mechanic": "crumble_paths",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "frosted_clocktower_silhouette",
     "persistence_motes"

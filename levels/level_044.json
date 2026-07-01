@@ -12,7 +12,7 @@
   "platform_style": "corroded",
   "hazards": [],
   "special_mechanic": "moving_platforms",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "ashen_ballroom_silhouette",
     "focus_motes"

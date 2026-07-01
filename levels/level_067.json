@@ -12,7 +12,7 @@
   "platform_style": "mossy",
   "hazards": [],
   "special_mechanic": "sliding_mechanics",
-  "difficulty": "hard",
+  "difficulty": "expert-",
   "decorations": [
     "gravity_chapel_silhouette",
     "hope_motes"

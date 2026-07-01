@@ -12,7 +12,7 @@
   "platform_style": "crystal",
   "hazards": [],
   "special_mechanic": "phase_platforms",
-  "difficulty": "normal",
+  "difficulty": "hard",
   "decorations": [
     "sapphire_tundra_silhouette",
     "wonder_motes"

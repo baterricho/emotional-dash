@@ -12,7 +12,7 @@
   "platform_style": "forest",
   "hazards": [],
   "special_mechanic": "crumble_paths",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "river_of_names_silhouette",
     "curiosity_motes"

@@ -12,7 +12,7 @@
   "platform_style": "metal",
   "hazards": [],
   "special_mechanic": "randomized_rhythm",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "velvet_volcano_silhouette",
     "acceptance_motes"

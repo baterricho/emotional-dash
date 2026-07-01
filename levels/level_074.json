@@ -12,7 +12,7 @@
   "platform_style": "corroded",
   "hazards": [],
   "special_mechanic": "phase_platforms",
-  "difficulty": "hard",
+  "difficulty": "expert-",
   "decorations": [
     "candle_ocean_silhouette",
     "focus_motes"

@@ -16,7 +16,7 @@ class EmotionalAdventureSystemsTest(unittest.TestCase):
     def test_skill_tree_unlocks_from_discovered_emotions(self):
         from src.skills.skill_tree import SkillTree
 
-        tree = SkillTree(["Curiosity", "Hope", "Anger"])
+        tree = SkillTree(["Curiosity", "Hope", "Determination"])
         self.assertTrue(tree.has("double_jump"))
         self.assertTrue(tree.has("healing_dash"))
         self.assertTrue(tree.has("power_dash"))

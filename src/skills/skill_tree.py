@@ -2,11 +2,14 @@ SKILL_UNLOCKS = {
     "Curiosity": "double_jump",
     "Hope": "healing_dash",
     "Courage": "shield",
-    "Anger": "power_dash",
+    "Determination": "power_dash",
     "Calm": "slow_time",
     "Balance": "ultimate_ability",
     "Growth": "ultimate_ability",
     "Acceptance": "skill_weaving",
+    "Strength": "rage_mode",
+    "Focus": "ghost_step",
+    "Excitement": "coin_burst",
 }
 
 

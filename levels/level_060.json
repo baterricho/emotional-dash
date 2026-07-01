@@ -12,7 +12,7 @@
   "platform_style": "ice",
   "hazards": [],
   "special_mechanic": "sliding_mechanics",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "frozen_crystal_kingdom_silhouette",
     "calm_motes"

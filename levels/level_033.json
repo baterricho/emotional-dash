@@ -12,7 +12,7 @@
   "platform_style": "stone",
   "hazards": [],
   "special_mechanic": "crumble_paths",
-  "difficulty": "normal",
+  "difficulty": "hard",
   "decorations": [
     "memory_train_silhouette",
     "trust_motes"

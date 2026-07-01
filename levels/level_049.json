@@ -12,7 +12,7 @@
   "platform_style": "neon",
   "hazards": [],
   "special_mechanic": "enemy_timing",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "soft_eclipse_silhouette",
     "doubt_motes"

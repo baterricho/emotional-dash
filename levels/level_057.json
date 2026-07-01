@@ -12,7 +12,7 @@
   "platform_style": "normal",
   "hazards": [],
   "special_mechanic": "basic_jump",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "dream_hospital_silhouette",
     "grief_motes"

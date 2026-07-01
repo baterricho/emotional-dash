@@ -12,7 +12,7 @@
   "platform_style": "forest",
   "hazards": [],
   "special_mechanic": "phase_platforms",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "blooming_labyrinth_silhouette",
     "awe_motes"

@@ -12,7 +12,7 @@
   "platform_style": "forest",
   "hazards": [],
   "special_mechanic": "boost_chain",
-  "difficulty": "expert",
+  "difficulty": "expert-",
   "decorations": [
     "forest_of_doors_silhouette",
     "awe_motes"

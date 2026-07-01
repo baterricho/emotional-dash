@@ -45,7 +45,9 @@ DEFAULT_SETTINGS = {
     "key_right": 100,    # pygame.K_d
     "key_jump": 32,      # pygame.K_SPACE
     "key_dash": 1073742049, # pygame.K_LSHIFT
-    "key_skill": 101,    # pygame.K_e
+    "key_skill": 101,    # pygame.K_e  (Shield)
+    "key_ghost": 114,   # pygame.K_r  (Ghost Step)
+    "key_ultimate": 113,# pygame.K_q  (Ultimate)
     "key_pause": 27,     # pygame.K_ESCAPE
     "key_interact": 13,  # pygame.K_RETURN
 

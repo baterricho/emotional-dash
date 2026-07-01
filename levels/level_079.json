@@ -12,7 +12,7 @@
   "platform_style": "neon",
   "hazards": [],
   "special_mechanic": "precision_jumps",
-  "difficulty": "expert",
+  "difficulty": "expert-",
   "decorations": [
     "jade_storm_silhouette",
     "doubt_motes"

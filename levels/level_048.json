@@ -12,7 +12,7 @@
   "platform_style": "stone",
   "hazards": [],
   "special_mechanic": "boost_chain",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "courage_arena_silhouette",
     "ambition_motes"

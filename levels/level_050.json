@@ -12,7 +12,7 @@
   "platform_style": "lava",
   "hazards": [],
   "special_mechanic": "fast_reactions",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "volcano_heart_silhouette",
     "anger_motes"

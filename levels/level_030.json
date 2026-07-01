@@ -12,7 +12,7 @@
   "platform_style": "gore",
   "hazards": [],
   "special_mechanic": "fake_platforms",
-  "difficulty": "hard",
+  "difficulty": "hard-",
   "decorations": [
     "shadow_dimension_silhouette",
     "fear_motes"

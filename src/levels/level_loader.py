@@ -1,11 +1,17 @@
 import json
+import sys
 from pathlib import Path
+
+
+def _root():
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS)
+    return Path(__file__).resolve().parents[2]
 
 
 class LevelLoader:
     def __init__(self, levels_dir=None):
-        base_dir = Path(__file__).resolve().parents[2]
-        self.levels_dir = Path(levels_dir) if levels_dir else base_dir / "levels"
+        self.levels_dir = Path(levels_dir) if levels_dir else _root() / "levels"
 
     def load(self, level_number):
         path = self.levels_dir / f"level_{level_number:03d}.json"

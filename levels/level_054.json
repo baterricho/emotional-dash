@@ -12,7 +12,7 @@
   "platform_style": "sandstone",
   "hazards": [],
   "special_mechanic": "gravity_shifts",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "rose_machine_silhouette",
     "joy_motes"

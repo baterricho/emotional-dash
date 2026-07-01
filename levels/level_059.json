@@ -12,7 +12,7 @@
   "platform_style": "corroded",
   "hazards": [],
   "special_mechanic": "dash_routes",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "lantern_citadel_silhouette",
     "forgiveness_motes"

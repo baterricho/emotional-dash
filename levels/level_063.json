@@ -12,7 +12,7 @@
   "platform_style": "stone",
   "hazards": [],
   "special_mechanic": "enemy_timing",
-  "difficulty": "hard",
+  "difficulty": "expert-",
   "decorations": [
     "blue_fire_shrine_silhouette",
     "trust_motes"

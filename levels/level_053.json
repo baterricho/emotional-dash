@@ -12,7 +12,7 @@
   "platform_style": "coral",
   "hazards": [],
   "special_mechanic": "sliding_mechanics",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "quiet_battlefield_silhouette",
     "peace_motes"

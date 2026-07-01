@@ -27,21 +27,36 @@ W, H   = 1280, 720
 FPS    = 60
 APP_NAME = "EmotionArchitect"
 SAVE_BASENAME = "save_data.json"
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LEVEL_MANAGER = LevelManager()
-TOTAL_LEVELS = LEVEL_MANAGER.total_levels
-SETTINGS = SettingsManager(os.path.join(BASE_DIR, "settings.json"))
 
-def get_save_path():
+# When frozen by PyInstaller --onefile, data files live in sys._MEIPASS.
+# When running from source they live next to run.py.
+if getattr(sys, "frozen", False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def resource_path(*parts):
+    """Return absolute path to a bundled resource (works frozen & from source)."""
+    return os.path.join(BASE_DIR, *parts)
+
+def get_user_data_dir():
+    """Persistent per-user folder for save data and settings (never temp)."""
     if sys.platform.startswith("win"):
         base = os.getenv("APPDATA") or os.path.expanduser("~")
     elif sys.platform == "darwin":
         base = os.path.join(os.path.expanduser("~"), "Library", "Application Support")
     else:
         base = os.getenv("XDG_DATA_HOME") or os.path.join(os.path.expanduser("~"), ".local", "share")
-    save_dir = os.path.join(base, APP_NAME)
-    os.makedirs(save_dir, exist_ok=True)
-    return os.path.join(save_dir, SAVE_BASENAME)
+    d = os.path.join(base, APP_NAME)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+LEVEL_MANAGER = LevelManager()
+TOTAL_LEVELS = LEVEL_MANAGER.total_levels
+SETTINGS = SettingsManager(os.path.join(get_user_data_dir(), "settings.json"))
+
+def get_save_path():
+    return os.path.join(get_user_data_dir(), SAVE_BASENAME)
 
 SAVE = get_save_path()
 LEGACY_SAVE = os.path.join(os.getcwd(), "ea_v5.json")
@@ -63,6 +78,13 @@ SETTINGS.add_listener("resolution_changed", apply_resolution_settings)
 SETTINGS.add_listener("fullscreen_changed", apply_resolution_settings)
 
 pygame.display.set_caption("EMOTION ARCHITECT: ULTIMATE")
+_icon_path = resource_path("assets", "icon.ico")
+if os.path.exists(_icon_path):
+    try:
+        _icon = pygame.image.load(_icon_path)
+        pygame.display.set_icon(_icon)
+    except Exception:
+        pass
 clock  = pygame.time.Clock()
 
 # ═══════════════════════════════════════════════════════════════
@@ -181,7 +203,8 @@ def load_save():
         except: pass
     return {"level":0,"best":0,"deaths":0,"runs":0,"coins":0,
             "cleared":[False]*TOTAL_LEVELS,"best_times":[0]*TOTAL_LEVELS,
-            "completed_levels":[],"stars":0,"emotions":[]}
+            "completed_levels":[],"stars":0,"emotions":[],
+            "level_stars":[0]*TOTAL_LEVELS}
 
 def save_game(d):
     with open(SAVE, "w", encoding="utf-8") as f: json.dump(d,f)
@@ -191,6 +214,8 @@ if "cleared" not in SD: SD["cleared"] = []
 if "best_times" not in SD: SD["best_times"] = []
 SD["cleared"] = (SD["cleared"] + [False]*TOTAL_LEVELS)[:TOTAL_LEVELS]
 SD["best_times"] = (SD["best_times"] + [0]*TOTAL_LEVELS)[:TOTAL_LEVELS]
+if "level_stars" not in SD: SD["level_stars"] = [0]*TOTAL_LEVELS
+SD["level_stars"] = (SD["level_stars"] + [0]*TOTAL_LEVELS)[:TOTAL_LEVELS]
 SD["level"] = clamp(SD.get("level", 0), 0, TOTAL_LEVELS-1)
 EMOTIONS = EmotionSystem(SD)
 
@@ -380,6 +405,21 @@ def gen_sound(freq=440,dur=0.1,vol=0.35,wave="sine",sweep=0,env_exp=0.15):
         buf[i*2]=v&0xFF; buf[i*2+1]=(v>>8)&0xFF
     snd=pygame.mixer.Sound(buffer=bytes(buf)); snd.set_volume(vol); return snd
 
+def gen_ambient_pad(base_freq, dur=2.0, vol=0.15, harmonics=None):
+    """Generate a seamlessly looping ambient drone pad (mono 16-bit PCM)."""
+    rate=44100; n=int(rate*dur); buf=bytearray(n*2)
+    if harmonics is None:
+        harmonics=[(1.0,0.5),(2.0,0.22),(3.0,0.10),(0.5,0.18)]
+    fade=int(rate*0.14)
+    for i in range(n):
+        t=i/rate
+        env=(i/fade if i<fade else (n-i)/fade if i>n-fade else 1.0)
+        lfo=1.0+0.04*math.sin(t*0.7)
+        s=sum(a*math.sin(math.tau*base_freq*m*t) for m,a in harmonics)
+        v=clamp(int(s*env*lfo*vol*32767),-32768,32767)
+        buf[i*2]=v&0xFF; buf[i*2+1]=(v>>8)&0xFF
+    snd=pygame.mixer.Sound(buffer=bytes(buf)); snd.set_volume(vol); return snd
+
 try:
     SND_JUMP = SND_DJUMP = SND_LAND = SND_DIE = None
     SND_WIN = SND_COIN = SND_PORTAL = SND_DASH = None
@@ -400,6 +440,27 @@ try:
         SOUND_OK    = True
 except Exception:
     SOUND_OK = False
+
+# Ambient music pads (one per emotion mood)
+_MOOD_PADS = {
+    "nervous":   (110, [(1.0,0.50),(1.414,0.28),(2.0,0.14),(0.5,0.12)]),
+    "intense":   (110, [(1.0,0.55),(1.5,0.30),(2.0,0.18),(3.0,0.08)]),
+    "heavy":     (82,  [(1.0,0.60),(2.0,0.25),(3.0,0.10),(0.5,0.22)]),
+    "bright":    (440, [(1.0,0.45),(1.25,0.28),(1.5,0.15),(2.0,0.10)]),
+    "brave":     (220, [(1.0,0.50),(1.5,0.30),(2.0,0.14),(3.0,0.06)]),
+    "peaceful":  (261, [(1.0,0.48),(1.334,0.26),(1.5,0.14),(2.0,0.10)]),
+    "calm":      (196, [(1.0,0.50),(2.0,0.22),(3.0,0.10),(4.0,0.06)]),
+    "energetic": (330, [(1.0,0.45),(1.25,0.30),(1.5,0.18),(2.0,0.12)]),
+    "balanced":  (220, [(1.0,0.48),(2.0,0.20),(3.0,0.10),(0.5,0.15)]),
+}
+AMBIENT_PADS = {}
+if MIXER_OK:
+    for _mood, (_freq, _harm) in _MOOD_PADS.items():
+        try:
+            AMBIENT_PADS[_mood] = gen_ambient_pad(_freq, harmonics=_harm)
+        except Exception:
+            pass
+_last_music_mood = None
 
 def play(snd, channel=None):
     if SOUND_OK and snd is not None:
@@ -900,17 +961,22 @@ class Coin:
         self.bob_off    = random.uniform(0,6.28)
         self.magnetized = False
 
-    def update(self, px, py):
+    def update(self, px, py, magnet=False):
         self.t    += 0.055
         self.spin += 0.10
         if self.collected: return
-        dx=px-self.x; dy=py-self.y
-        d=math.hypot(dx,dy)
-        if d<self.MAGNET_DIST:
-            self.magnetized=True
-            spd=self.MAGNET_SPD*(1-(d/self.MAGNET_DIST)*0.6)
-            if d>1:
-                self.x+=dx/d*spd; self.y+=dy/d*spd
+        if magnet:
+            dx=px-self.x; dy=py-self.y
+            d=math.hypot(dx,dy)
+            if d<self.MAGNET_DIST:
+                self.magnetized=True
+                spd=self.MAGNET_SPD*(1-(d/self.MAGNET_DIST)*0.6)
+                if d>1:
+                    self.x+=dx/d*spd; self.y+=dy/d*spd
+            else:
+                self.magnetized=False
+        else:
+            self.magnetized=False
 
     def draw(self, surf):
         if self.collected: return
@@ -1365,7 +1431,7 @@ class Portal:
 # ═══════════════════════════════════════════════════════════════
 #  PLAYER  (sprite character, squish/stretch, speed lines, double-jump)
 # ═══════════════════════════════════════════════════════════════
-PLAYER_SPRITE_PATH = os.path.join(BASE_DIR, "assets", "sprites", "player", "character_sheet.png")
+PLAYER_SPRITE_PATH = resource_path("assets", "sprites", "player", "character_sheet.png")
 PLAYER_FRAME_W = 96
 PLAYER_FRAME_H = 80
 PLAYER_VISUAL_SCALE = 0.7
@@ -1416,6 +1482,9 @@ class Player:
         self.jumps_left=2
         # Speed lines
         self.speed_lines=[]  # [(x,y,len,alpha)]
+        self.shield_active=False
+        self.ghost_active=False
+        self.rage_active=False
 
     def spawn(self,x,y,hit=False):
         self.rect.x,self.rect.y=x,y
@@ -1513,7 +1582,7 @@ class Player:
                 self._squish(0.7,1.4)
                 ps.emit(self.rect.centerx,self.rect.bottom,
                         count=14,life=24,color=wt[5],size=4,spread=4,grav=-0.05)
-            elif self.jumps_left>0 and not was_grounded:  # double jump
+            elif self.jumps_left>0 and not was_grounded and skills.has("double_jump"):  # double jump
                 self.vy=self.JUMP2*emotion_profile.get("jump",1.0); self.jbuffer_t=0
                 self.jumps_left-=1
                 play(SND_DJUMP)
@@ -1650,9 +1719,81 @@ class Player:
 
         aura_r=18+int(math.sin(self.t*0.05)*2)
         pygame.draw.circle(surf,(*wt[3],32),(cx,self.rect.centery),aura_r,1)
-        self.sprite.draw(surf,(cx,self.rect.bottom+4),facing=self.facing,
-                         squash=(self.sq_x*PLAYER_VISUAL_SCALE,
-                                  self.sq_y*PLAYER_VISUAL_SCALE*breathe))
+
+        # Active shield: pulsing hexagon bubble
+        if self.shield_active:
+            pulse_s=(math.sin(self.t*0.25)+1)/2
+            sr=28+int(pulse_s*5)
+            sc=(int(80+175*pulse_s),int(200+55*pulse_s),255,int(140+80*pulse_s))
+            hex_pts=[(cx+int(sr*math.cos(math.pi/2+i*math.pi/3)),
+                      self.rect.centery+int(sr*math.sin(math.pi/2+i*math.pi/3)))
+                     for i in range(6)]
+            hs=pygame.Surface((sr*2+16,sr*2+16),pygame.SRCALPHA)
+            pygame.draw.polygon(hs,(*sc[:3],int(sc[3]*0.18)),
+                [(x-cx+sr+8,y-self.rect.centery+sr+8) for x,y in hex_pts])
+            pygame.draw.polygon(hs,sc[:3]+[sc[3]],
+                [(x-cx+sr+8,y-self.rect.centery+sr+8) for x,y in hex_pts],3)
+            surf.blit(hs,(cx-sr-8,self.rect.centery-sr-8))
+            if int(self.t)%4==0:
+                ai=random.randint(0,5)
+                px2=cx+int(sr*math.cos(math.pi/2+ai*math.pi/3))
+                py2=self.rect.centery+int(sr*math.sin(math.pi/2+ai*math.pi/3))
+                ps.emit(px2,py2,count=1,life=18,color=(120,220,255),size=3,spread=0.6,grav=0)
+
+        # Rage Mode: fire aura + intense red-orange glow
+        if self.rage_active:
+            pulse_r=(math.sin(self.t*0.18)+1)/2
+            for ring_r,ring_a in [(26,60),(36,30),(46,14)]:
+                rr=ring_r+int(pulse_r*4)
+                ra_surf=pygame.Surface((rr*2+4,rr*2+4),pygame.SRCALPHA)
+                pygame.draw.circle(ra_surf,(255,int(80+pulse_r*60),20,ring_a),(rr+2,rr+2),rr,3)
+                surf.blit(ra_surf,(cx-rr-2,self.rect.centery-rr-2))
+            # fire particles from feet
+            if int(self.t)%3==0:
+                ps.emit(cx+random.randint(-8,8),self.rect.bottom-4,
+                        count=2,life=22,color=(255,random.randint(60,160),20),
+                        size=random.randint(2,4),spread=0.9,grav=-0.12)
+
+        # Ghost Step: semi-transparent ghostly overlay + echo copies
+        if self.ghost_active:
+            pulse_g=(math.sin(self.t*0.22)+1)/2
+            # Ghostly echo ring
+            gr=22+int(pulse_g*6)
+            gs=pygame.Surface((gr*2+6,gr*2+6),pygame.SRCALPHA)
+            pygame.draw.circle(gs,(160,130,255,int(50+pulse_g*50)),(gr+3,gr+3),gr,2)
+            surf.blit(gs,(cx-gr-3,self.rect.centery-gr-3))
+            # Draw 2 ghost copies offset behind player
+            for gi in range(1,3):
+                gox=cx-self.facing*gi*14
+                ghost_s=pygame.Surface((self.SIZE+4,self.SIZE+12),pygame.SRCALPHA)
+                self.sprite.draw(ghost_s,(self.SIZE//2+2,self.SIZE+6),
+                                 facing=self.facing,
+                                 squash=(self.sq_x*PLAYER_VISUAL_SCALE,
+                                         self.sq_y*PLAYER_VISUAL_SCALE))
+                ghost_s.set_alpha(int(55-gi*18))
+                # tint purple
+                tint=pygame.Surface(ghost_s.get_size(),pygame.SRCALPHA)
+                tint.fill((120,80,255,30))
+                ghost_s.blit(tint,(0,0),special_flags=pygame.BLEND_RGBA_ADD)
+                surf.blit(ghost_s,(gox-self.SIZE//2-2,self.rect.bottom+4-self.SIZE-12))
+            # particles drifting upward
+            if int(self.t)%5==0:
+                ps.emit(cx+random.randint(-10,10),self.rect.centery+random.randint(-10,10),
+                        count=1,life=30,color=(180,140,255),size=2,spread=0.5,grav=-0.05)
+
+        # Draw sprite (ghost step renders it semi-transparent)
+        if self.ghost_active:
+            ghost_sprite_s=pygame.Surface((self.SIZE+20,self.SIZE+20),pygame.SRCALPHA)
+            self.sprite.draw(ghost_sprite_s,(self.SIZE//2+10,self.SIZE+10),
+                             facing=self.facing,
+                             squash=(self.sq_x*PLAYER_VISUAL_SCALE,
+                                      self.sq_y*PLAYER_VISUAL_SCALE*breathe))
+            ghost_sprite_s.set_alpha(140)
+            surf.blit(ghost_sprite_s,(cx-self.SIZE//2-10,self.rect.bottom+4-self.SIZE-10))
+        else:
+            self.sprite.draw(surf,(cx,self.rect.bottom+4),facing=self.facing,
+                             squash=(self.sq_x*PLAYER_VISUAL_SCALE,
+                                      self.sq_y*PLAYER_VISUAL_SCALE*breathe))
 
         # Dash ready indicator
         if self.dash_t==0:
@@ -1976,7 +2117,6 @@ def build_level(idx):
         ]
         enemies=[mk_E(458,398,"patrol",4.9,wi,px1=438,px2=578),
                  mk_E(658,186,"orbit",2.0,wi,ocx=718,ocy=216,orb_r=72,orb_spd=0.072),
-                 mk_E(458,126,"chase",2.9,wi),
                  mk_E(598,298,"zigzag",4.1,wi,ocy=298,orb_r=56)]
         coins=[Coin(648,338),Coin(458,128),Coin(250,68)]
         start=(50,526); goal=(138,46)
@@ -1997,8 +2137,7 @@ def build_level(idx):
         ]
         enemies=[mk_E(418,396,"patrol",5.0,wi,px1=398,px2=562),
                  mk_E(648,333,"orbit",2.0,wi,ocx=698,ocy=363,orb_r=76,orb_spd=0.076),
-                 mk_E(638,298,"spiral",2.0,wi,ocx=638,ocy=298,orb_r=102,orb_spd=0.042),
-                 mk_E(478,126,"chase",3.3,wi,shoot_iv=80)]
+                 mk_E(638,298,"spiral",2.0,wi,ocx=638,ocy=298,orb_r=102,orb_spd=0.042)]
         coins=[Coin(648,336),Coin(478,128),Coin(268,68)]
         start=(50,526); goal=(138,46)
 
@@ -2021,8 +2160,7 @@ def build_level(idx):
         enemies=[mk_E(408,396,"patrol",5.2,wi,px1=388,px2=556),
                  mk_E(598,332,"orbit",2.0,wi,ocx=648,ocy=362,orb_r=78,orb_spd=0.080),
                  mk_E(400,H-120,"bouncer",4.0,wi),
-                 mk_E(800,H-120,"bouncer",3.8,wi),
-                 mk_E(618,182,"chase",3.5,wi,shoot_iv=75)]
+                 mk_E(800,H-120,"bouncer",3.8,wi)]
         coins=[Coin(598,334),Coin(438,124),Coin(258,64)]
         start=(50,526); goal=(136,44)
 
@@ -2058,27 +2196,26 @@ def build_level(idx):
             platforms.append(mk_P(sx,H-28,58,28,wi,deadly=True))
 
         ec=max(4,3+idx//2)
-        etype_pool=["patrol","orbit","chase","sine","zigzag","spiral","bouncer","teleport"]
-        wts_pool=[3,2,2,2,2,max(0,int((idx-7)*0.6)),max(0,int((idx-9)*0.4)),max(0,int((idx-11)*0.5))]
+        is_final=(idx==TOTAL_LEVELS-1)
+        # chase weight: 0 on all levels, high on level 100 only
+        chase_w=8 if is_final else 0
+        etype_pool=["patrol","orbit","sine","zigzag","spiral","bouncer","teleport","chase"]
+        wts_pool=[3,2,2,2,max(0,int((idx-7)*0.6)),max(0,int((idx-9)*0.4)),max(0,int((idx-11)*0.5)),chase_w]
         for i in range(ec):
             spd=3.2+diff*5.4
             hp=max(1,int(1+diff*2.8))
-            si=max(28,102-idx*4) if idx>=9 and random.random()<0.46 else 0
-            etype=random.choices(etype_pool,weights=wts_pool[:len(etype_pool)])[0]
+            etype=random.choices(etype_pool,weights=wts_pool)[0]
             if etype=="patrol":
                 ex=random.randint(148,W-148); ey=random.randint(198,H-98)
-                enemies.append(mk_E(ex,ey,"patrol",spd,wi,px1=ex-142,px2=ex+142,shoot_iv=si,hp=hp))
+                enemies.append(mk_E(ex,ey,"patrol",spd,wi,px1=ex-142,px2=ex+142,hp=hp))
             elif etype=="orbit":
                 cx2=random.randint(318,W-318); cy2=random.randint(198,H-208)
                 enemies.append(mk_E(cx2,cy2,"orbit",2.0,wi,ocx=cx2,ocy=cy2,
-                    orb_r=66+idx*4,orb_spd=0.025+diff*0.072,shoot_iv=si))
-            elif etype=="chase":
-                ex=random.randint(208,W-208); ey=random.randint(108,H-208)
-                enemies.append(mk_E(ex,ey,"chase",spd*0.65,wi,hp=hp))
+                    orb_r=66+idx*4,orb_spd=0.025+diff*0.072))
             elif etype=="sine":
                 ey=random.randint(198,H-208)
                 enemies.append(mk_E(220,ey,"sine",spd*0.75,wi,px1=98,px2=W-98,
-                    ocy=ey,orb_r=66+idx*3,shoot_iv=si))
+                    ocy=ey,orb_r=66+idx*3))
             elif etype=="zigzag":
                 ey=random.randint(148,H-208)
                 enemies.append(mk_E(318,ey,"zigzag",spd*0.94,wi,ocy=ey,orb_r=50+idx*3))
@@ -2089,7 +2226,14 @@ def build_level(idx):
             elif etype=="bouncer":
                 enemies.append(mk_E(random.randint(198,W-198),H-198,"bouncer",spd,wi))
             elif etype=="teleport":
-                enemies.append(mk_E(400,298,"teleport",0,wi,hp=hp+1,shoot_iv=si))
+                enemies.append(mk_E(400,298,"teleport",0,wi,hp=hp+1))
+            elif etype=="chase":
+                ex=random.randint(208,W-208); ey=random.randint(108,H-208)
+                enemies.append(mk_E(ex,ey,"chase",spd*0.75,wi,hp=hp))
+
+        # Guarantee at least one chase enemy on the final level
+        if is_final and not any(e.etype=="chase" for e in enemies):
+            enemies.append(mk_E(W//2,H//2,"chase",diff*3.0,wi,hp=3))
 
         start=(50,H-80); goal=(W-108,80)
 
@@ -2098,7 +2242,10 @@ def build_level(idx):
 # ═══════════════════════════════════════════════════════════════
 #  HUD  (world-tinted, combo display, dash, lives as 3D spheres)
 # ═══════════════════════════════════════════════════════════════
-def draw_hud(surf, idx, lives, tick, coins_total, coins_got, combo, dash_t, time_elapsed):
+def draw_hud(surf, idx, lives, tick, coins_total, coins_got, combo, dash_t, time_elapsed,
+             shield_cooldown_t=0, skill_has_shield=False,
+             ghost_cooldown_t=0, ghost_active_t=0, skill_has_ghost=False,
+             rage_cooldown_t=0, rage_active_t=0, skill_has_rage=False):
     wt=WTHEME(idx)
     acc=wt[3]
 
@@ -2136,9 +2283,6 @@ def draw_hud(surf, idx, lives, tick, coins_total, coins_got, combo, dash_t, time
     event=WorldEventSystem(meta)
     if event.has_major_challenge:
         draw_text(surf,event.challenge_name,(W//2,50),lerpC(acc,(255,255,255),0.35),F_TINY,center=True)
-    wname=WT[idx%20][6]
-    draw_text(surf,f"WORLD {idx+1:02d}/20  ·  {wname}",(W//2,7),acc,F_MD,center=True)
-    draw_text(surf,name,(W//2,33),(175,185,215),F_TINY,center=True)
 
     # Stats
     draw_text(surf,f"BEST: W{SD['best']+1}",(24,7),(155,165,235),F_TINY)
@@ -2181,9 +2325,47 @@ def draw_hud(surf, idx, lives, tick, coins_total, coins_got, combo, dash_t, time
         pygame.draw.rect(surf,fc,(bx,by,int(bw*pct),7),border_radius=3)
         draw_text(surf,"DASH",(bx+bw//2,by-16),(78,92,108),F_TINY,center=True)
 
+    # Skill cooldown bars (stacked above dash bar, right side)
+    # Each bar is 20px taller than the one below it
+    bar_slot=0  # counts bars added so far (grows upward)
+
+    def _skill_bar(label, key_hint, color, cooldown, max_cd, active=False):
+        nonlocal bar_slot
+        bw2=112; bx2=W-bw2-20; by2=H-42-bar_slot*20
+        bar_slot+=1
+        if active:
+            pulse=(math.sin(tick*0.18)+1)/2
+            ac=lerpC(color,(255,255,255),pulse*0.35)
+            pygame.draw.rect(surf,(*ac,230),(bx2,by2,bw2,6),border_radius=3)
+            draw_text(surf,f"{key_hint}:ACTIVE!",(bx2+bw2//2,by2-14),ac,F_TINY,center=True)
+        elif cooldown==0:
+            pygame.draw.rect(surf,(*color,210),(bx2,by2,bw2,6),border_radius=3)
+            draw_text(surf,f"{key_hint}:{label}",(bx2+bw2//2,by2-14),color,F_TINY,center=True)
+        else:
+            pct2=1-(cooldown/max_cd)
+            pygame.draw.rect(surf,(22,22,40),(bx2,by2,bw2,6),border_radius=3)
+            fc2=lerpC((40,50,70),color,pct2)
+            pygame.draw.rect(surf,fc2,(bx2,by2,int(bw2*pct2),6),border_radius=3)
+            draw_text(surf,label,(bx2+bw2//2,by2-14),(50,65,85),F_TINY,center=True)
+
+    if skill_has_shield:
+        _skill_bar("SHIELD","E",(80,200,255),shield_cooldown_t,300)
+    if skill_has_ghost:
+        _skill_bar("GHOST","R",(180,160,255),ghost_cooldown_t,900,active=ghost_active_t>0)
+    if skill_has_rage:
+        rage_c=(255,90,40) if rage_active_t>0 else (255,140,60)
+        _skill_bar("RAGE","AUTO",rage_c,rage_cooldown_t,1200,active=rage_active_t>0)
+
     # Controls
-    draw_text(surf,"A/D:Move  SPACE:Jump(x2)  SHIFT:Dash  ESC:Pause",
-              (W//2,H-14),(68,72,108),F_TINY,center=True,shadow=False)
+    def _kname(k): return pygame.key.name(k).upper()
+    hint=(f"{_kname(SETTINGS.get('key_left',97))}/{_kname(SETTINGS.get('key_right',100))}:Move"
+          f"  {_kname(SETTINGS.get('key_jump',32))}:Jump"
+          f"  {_kname(SETTINGS.get('key_dash',1073742049))}:Dash"
+          f"  {_kname(SETTINGS.get('key_skill',101))}:Shield"
+          f"  {_kname(SETTINGS.get('key_ghost',114))}:Ghost"
+          f"  {_kname(SETTINGS.get('key_ultimate',113))}:Ultimate"
+          f"  {_kname(SETTINGS.get('key_pause',27))}:Pause")
+    draw_text(surf,hint,(W//2,H-14),(68,72,108),F_TINY,center=True,shadow=False)
 
 # ═══════════════════════════════════════════════════════════════
 #  WORLD INTRO CARD  (cinematic world name flash on enter)
@@ -2381,7 +2563,9 @@ class SettingsScreen:
             ("key_right",       "Move Right",       "keybind",None),
             ("key_jump",        "Jump",             "keybind",None),
             ("key_dash",        "Dash",             "keybind",None),
-            ("key_skill",       "Skill",            "keybind",None),
+            ("key_skill",       "Shield",           "keybind",None),
+            ("key_ghost",       "Ghost Step",       "keybind",None),
+            ("key_ultimate",    "Ultimate",         "keybind",None),
             ("key_pause",       "Pause",            "keybind",None),
             ("key_interact",    "Interact",         "keybind",None),
             ("controller_support","Controller Support","toggle",None),
@@ -2628,7 +2812,8 @@ class SettingsScreen:
     def _do_reset(self):
         SD.update({"level":0,"best":0,"deaths":0,"runs":0,"coins":0,
                    "cleared":[False]*TOTAL_LEVELS,"best_times":[0]*TOTAL_LEVELS,
-                   "completed_levels":[],"stars":0,"emotions":[]})
+                   "completed_levels":[],"stars":0,"emotions":[],
+                   "level_stars":[0]*TOTAL_LEVELS})
         save_game(SD)
         self.save_flash=120
 
@@ -3192,11 +3377,17 @@ def draw_gameover(surf, death_world=0):
     hi2=pygame.Surface((btn.w-10,10),pygame.SRCALPHA); hi2.fill((255,100,100,33)); surf.blit(hi2,(btn.x+5,btn.y+5))
     bl2=outlined(f"↺   RETRY  WORLD  {death_world+1}",F_LG,lerpC((255,200,200),(255,240,220),pulse),(80,0,0),2)
     surf.blit(bl2,(btn.centerx-bl2.get_width()//2,btn.centery-bl2.get_height()//2))
+    # Settings button
+    btn_set=pygame.Rect(W//2-188,514,376,48)
+    pygame.draw.rect(surf,(28,28,50),btn_set,border_radius=12)
+    pygame.draw.rect(surf,(90,90,140),btn_set,2,border_radius=12)
+    sl=F_MD.render("⚙  SETTINGS",True,(180,185,230))
+    surf.blit(sl,(btn_set.centerx-sl.get_width()//2,btn_set.centery-sl.get_height()//2))
     wn2=F_TAG.render(f"⚠  YOUR PROGRESS IS SAFE  ·  RESPAWNING ON WORLD {death_world+1}  ⚠",True,(118,110,40))
     surf.blit(wn2,(W//2-wn2.get_width()//2,H-26))
-    return btn
+    return btn, btn_set
 
-def draw_level_complete(surf, level_idx, time_elapsed):
+def draw_level_complete(surf, level_idx, time_elapsed, stars=3):
     t=pygame.time.get_ticks()/1000.0
     meta=level_meta(level_idx)
     wt=WTHEME(level_idx)
@@ -3215,8 +3406,8 @@ def draw_level_complete(surf, level_idx, time_elapsed):
     event=WorldEventSystem(meta)
     if event.has_major_challenge:
         draw_text(surf,event.challenge_name,(W//2,282),(255,180,110),F_MD,center=True)
-    stars="★ ★ ★"
-    draw_text(surf,f"Stars: {stars}",(W//2,322),(255,220,90),F_MD,center=True)
+    star_str="★"*stars + "☆"*(3-stars)
+    draw_text(surf,f"Stars: {star_str}",(W//2,322),(255,220,90),F_MD,center=True)
     draw_text(surf,f"Memory unlocked: {meta['story']}",
               (W//2,376),(210,215,240),F_SUB,center=True)
     ts=int(time_elapsed); draw_text(surf,f"Time: {ts//60:02d}:{ts%60:02d}",
@@ -3334,6 +3525,11 @@ class Game:
         self.combo=0; self.combo_timer=0
         self.world_transition=0
         self.paused=False
+        self.ultimate_t=0; self.skill_weave_t=0; self.shield_cooldown_t=0
+        self.rage_cooldown_t=0; self.rage_active_t=0
+        self.ghost_cooldown_t=0; self.ghost_active_t=0
+        self.ultimate_waves=[]   # [{r,alpha,color}] expanding shockwave rings
+        self.healing_dash_used=False; self.completed_level_stars=3
         self.level_start_time=_time.time()
         self.death_world=0
         self.completed_level_idx=0
@@ -3360,9 +3556,24 @@ class Game:
         self.portal=Portal(*goal,world_idx=idx)
         player.spawn(*self.start_pos); player.world_idx=idx
         self.coins_got=0; self.world_transition=35
+        self.level_deaths=0; self.level_total_coins=len(self.coins)
+        self.healing_dash_used=False
+        self.rage_cooldown_t=0; self.rage_active_t=0
+        self.ghost_cooldown_t=0; self.ghost_active_t=0
         self.level_start_time=_time.time()
         SD["best"]=max(SD.get("best",0),idx); save_game(SD)
         intro_card.trigger(idx)
+        # Ambient music crossfade on level load
+        global _last_music_mood
+        if MIXER_OK and SETTINGS.get("emotion_music", True):
+            _mood=self.emotion_profile.get("mood","balanced")
+            _pad=AMBIENT_PADS.get(_mood)
+            if _pad and _mood!=_last_music_mood:
+                CHANNEL_MUSIC.stop()
+                CHANNEL_MUSIC.play(_pad,loops=-1,fade_ms=2000)
+                _last_music_mood=_mood
+        elif MIXER_OK:
+            CHANNEL_MUSIC.stop(); _last_music_mood=None
         
         if not hasattr(self, "checkpoint_data") or getattr(self, "checkpoint_data", {}).get("level_id") != idx:
             self.checkpoint_data = {
@@ -3374,7 +3585,6 @@ class Game:
             }
         elif SETTINGS.get("checkpoint_assist"):
             player.rect.centerx, player.rect.centery = self.checkpoint_data["position"]
-            if hasattr(self, "skill_tree"): self.skill_tree.unlocked = self.checkpoint_data["abilities"].copy()
             if hasattr(self, "emotion_profile"): self.emotion_profile = self.checkpoint_data["emotion_state"].copy()
 
     def popup(self, x, y, text, color=(255,255,100)):
@@ -3390,6 +3600,22 @@ class Game:
             player.invincible=45
             ps.burst(player.rect.centerx,player.rect.centery,
                      count=20,color=WTHEME(self.level_idx)[3],size=5,world=self.level_idx)
+            # skill_weaving: shield + slow_time combo → brief ultra-slow window
+            if self.skill_tree.has("skill_weaving") and self.skill_tree.has("slow_time"):
+                self.skill_weave_t=180
+                ps.burst(player.rect.centerx,player.rect.centery,
+                         count=35,color=(180,100,255),size=8,world=self.level_idx)
+                self.popup(player.rect.centerx,player.rect.centery-36,"SKILL WEAVE!",(200,120,255))
+            return
+        # healing_dash: survive a death while dashing, once per level
+        if (player.dashing and self.skill_tree.has("healing_dash")
+                and not self.healing_dash_used and self.lives<5):
+            self.healing_dash_used=True
+            self.lives=min(5,self.lives+1)
+            player.invincible=90
+            ps.burst(player.rect.centerx,player.rect.centery,
+                     count=30,color=(80,255,160),size=7,world=self.level_idx)
+            self.popup(player.rect.centerx,player.rect.centery-30,"HEALING DASH! +♥",(80,255,160))
             return
         if SETTINGS.get("screen_shake") and not SETTINGS.get("reduce_motion"):
             cam.hit(24,10)
@@ -3398,7 +3624,7 @@ class Game:
                  count=44,color=(255,65,65),size=9,world=self.level_idx)
         self.flash((255,30,30),245)
         SD["deaths"]+=1; save_game(SD)
-        self.combo=0; self.lives-=1
+        self.combo=0; self.level_deaths+=1; self.lives-=1
         if self.lives<=0:
             self.state="GAME_OVER"
             self.death_world=self.level_idx
@@ -3415,7 +3641,15 @@ class Game:
         if SD["best_times"][self.level_idx]==0 or elapsed<SD["best_times"][self.level_idx]:
             SD["best_times"][self.level_idx]=round(elapsed,1)
         SD["cleared"][self.level_idx]=True
-        EMOTIONS.complete_level(self.level_idx, level_meta(self.level_idx)["emotion"], stars=3)
+        # Compute actual earned stars (1 = cleared, +1 no deaths, +1 all coins)
+        earned=1
+        if self.level_deaths==0: earned+=1
+        if self.level_total_coins>0 and self.coins_got>=self.level_total_coins: earned+=1
+        elif self.level_total_coins==0: earned+=1  # no coins level → full coin star free
+        earned=max(earned, SD["level_stars"][self.level_idx])  # never downgrade best
+        SD["level_stars"][self.level_idx]=earned
+        self.completed_level_stars=earned
+        EMOTIONS.complete_level(self.level_idx, level_meta(self.level_idx)["emotion"], stars=earned)
         self.skill_tree=SkillTree(SD.get("emotions", []))
         play(SND_WIN)
         if SETTINGS.get("screen_shake") and not SETTINGS.get("reduce_motion"):
@@ -3467,6 +3701,8 @@ class Game:
                     if e.type==pygame.KEYDOWN:
                         if e.key in (pygame.K_ESCAPE, pygame.K_b):
                             self.state=self.settings_return_state
+                            if MIXER_OK: sync_audio_volumes()
+                            self.emotion_profile=get_emotion_profile(self.level_meta["emotion"])
                         elif e.key==pygame.K_1: cycle_setting("difficulty",["relaxed","normal","challenge"])
                         elif e.key==pygame.K_2: SETTINGS.toggle("assist_mode")
                         elif e.key==pygame.K_3: SETTINGS.toggle("auto_dash")
@@ -3478,25 +3714,34 @@ class Game:
                         elif e.key==pygame.K_9: cycle_setting("emotion_intensity",["low","medium","high"])
                     if e.type==pygame.MOUSEBUTTONDOWN and e.button==1 and back.collidepoint(e.pos):
                         self.state=self.settings_return_state
+                        if MIXER_OK: sync_audio_volumes()
+                        # Re-apply emotion profile in case emotion_intensity changed
+                        self.emotion_profile=get_emotion_profile(self.level_meta["emotion"])
                 continue
 
             # ── GAME OVER ─────────────────────────────────────
             if self.state=="GAME_OVER":
-                screen.fill((0,0,0)); btn=draw_gameover(screen,self.death_world)
+                screen.fill((0,0,0)); btn,btn_set=draw_gameover(screen,self.death_world)
                 ps.draw(screen); flip_display()
                 for e in get_events():
                     if e.type==pygame.QUIT: sys.exit()
+                    if e.type==pygame.KEYDOWN and e.key==pygame.K_RETURN:
+                        SD["deaths"]=0; save_game(SD); self.lives=5
+                        self.load_level(self.death_world); self.state="PLAY"
                     if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
                         if btn.collidepoint(e.pos):
                             SD["deaths"]=0; save_game(SD)
                             self.lives=5
                             self.load_level(self.death_world)
                             self.state="PLAY"
+                        elif btn_set.collidepoint(e.pos):
+                            self.settings_return_state="GAME_OVER"
+                            self.state="SETTINGS"
                 continue
 
             # ── LEVEL COMPLETE ───────────────────────────────
             if self.state=="LEVEL_COMPLETE":
-                screen.fill((0,0,0)); btn=draw_level_complete(screen,self.completed_level_idx,self.completed_level_time)
+                screen.fill((0,0,0)); btn=draw_level_complete(screen,self.completed_level_idx,self.completed_level_time,getattr(self,"completed_level_stars",3))
                 ps.draw(screen); flip_display()
                 for e in get_events():
                     if e.type==pygame.QUIT: sys.exit()
@@ -3523,7 +3768,8 @@ class Game:
                             SD.update({"level":0,"best":0,"deaths":0,"runs":0,
                                        "cleared":[False]*TOTAL_LEVELS,
                                        "best_times":[0]*TOTAL_LEVELS,
-                                       "completed_levels":[],"stars":0,"emotions":[]})
+                                       "completed_levels":[],"stars":0,"emotions":[],
+                                       "level_stars":[0]*TOTAL_LEVELS})
                             save_game(SD); self.lives=5; self.level_idx=0
                             self.load_level(0); self.state="MENU"
                 continue
@@ -3548,22 +3794,66 @@ class Game:
                 continue
 
             # ── PLAY ──────────────────────────────────────────
+            # Read remappable keys from settings (fall back to defaults)
+            _k_left    = SETTINGS.get("key_left",    pygame.K_a)
+            _k_right   = SETTINGS.get("key_right",   pygame.K_d)
+            _k_jump    = SETTINGS.get("key_jump",    pygame.K_SPACE)
+            _k_dash    = SETTINGS.get("key_dash",    pygame.K_LSHIFT)
+            _k_shield  = SETTINGS.get("key_skill",   pygame.K_e)
+            _k_ghost   = SETTINGS.get("key_ghost",   pygame.K_r)
+            _k_ultimate= SETTINGS.get("key_ultimate",pygame.K_q)
+            _k_pause   = SETTINGS.get("key_pause",   pygame.K_ESCAPE)
+
             jump=False; dash=False
             for e in get_events():
                 if e.type==pygame.QUIT: sys.exit()
                 joy.handle(e)
                 if e.type==pygame.KEYDOWN:
-                    if e.key==pygame.K_ESCAPE:
+                    if e.key==_k_pause:
                         self.paused=True; play(SND_PAUSE)
-                    if e.key in (pygame.K_SPACE,pygame.K_UP,pygame.K_w): jump=True
-                    if e.key in (pygame.K_LSHIFT,pygame.K_RSHIFT): dash=True
+                    if e.key in (_k_jump, pygame.K_UP, pygame.K_w): jump=True
+                    if e.key in (_k_dash, pygame.K_LSHIFT, pygame.K_RSHIFT): dash=True
+                    # Shield: remappable (default E)
+                    if e.key==_k_shield and self.skill_tree.has("shield") and self.shield_cooldown_t==0:
+                        player.invincible=30
+                        player.shield_active=True
+                        self.shield_cooldown_t=300
+                        ps.burst(player.rect.centerx,player.rect.centery,
+                                 count=24,color=(80,200,255),size=6,world=self.level_idx)
+                        play(SND_BOOST)
+                        self.popup(player.rect.centerx,player.rect.centery-36,
+                                   "SHIELD!  (0.5s)",(80,200,255))
+                    # Ghost Step: remappable (default R)
+                    if e.key==_k_ghost and self.skill_tree.has("ghost_step") and self.ghost_cooldown_t==0:
+                        self.ghost_active_t=90
+                        self.ghost_cooldown_t=900
+                        play(SND_BOOST)
+                        ps.burst(player.rect.centerx,player.rect.centery,
+                                 count=20,color=(180,180,255),size=5,world=self.level_idx)
+                        self.popup(player.rect.centerx,player.rect.centery-36,
+                                   "GHOST STEP! (1.5s)",(180,180,255))
+                    # Ultimate: remappable (default Q)
+                    if e.key==_k_ultimate and self.skill_tree.has("ultimate_ability") and self.ultimate_t==0:
+                        self.ultimate_t=600
+                        for en in self.enemies: en.alive=False
+                        self.flash((200,180,255),220)
+                        ps.burst(W//2,H//2,count=120,color=(200,160,255),size=10,world=self.level_idx)
+                        play(SND_WIN)
+                        self.popup(W//2,H//2-60,"ULTIMATE!",(200,160,255))
+                        # spawn 4 expanding shockwave rings with staggered delays
+                        for delay_r in [0, 8, 18, 30]:
+                            self.ultimate_waves.append({
+                                "r": float(delay_r), "alpha": 220,
+                                "color": (200,160,255) if delay_r%2==0 else (255,220,255),
+                                "ox": W//2, "oy": H//2,
+                            })
                 if e.type==pygame.MOUSEBUTTONDOWN and e.button==1:
                     if e.pos[1]<H//2: jump=True
 
             keys=pygame.key.get_pressed()
             dx=0.0
-            if keys[pygame.K_LEFT]  or keys[pygame.K_a]: dx-=1
-            if keys[pygame.K_RIGHT] or keys[pygame.K_d]: dx+=1
+            if keys[_k_left]  or keys[pygame.K_LEFT]:  dx-=1
+            if keys[_k_right] or keys[pygame.K_RIGHT]: dx+=1
             dx+=joy.dx
             if SETTINGS.get("auto_dash") and player.dash_t==0 and abs(dx)>0.1:
                 dash=True
@@ -3578,13 +3868,41 @@ class Game:
             speed_scale*=self.world_events.intensity()
             if self.skill_tree.has("slow_time"):
                 speed_scale*=0.92
+            # skill_weaving active window: dramatically slow time
+            if self.skill_weave_t>0:
+                self.skill_weave_t-=1
+                speed_scale*=0.45
+            # cooldown ticks
+            if self.ultimate_t>0: self.ultimate_t-=1
+            if self.shield_cooldown_t>0: self.shield_cooldown_t-=1
+            if self.ghost_cooldown_t>0: self.ghost_cooldown_t-=1
+            if self.ghost_active_t>0: self.ghost_active_t-=1
+            if self.rage_cooldown_t>0: self.rage_cooldown_t-=1
+            if self.rage_active_t>0: self.rage_active_t-=1
+            # sync skill visuals to player flags
+            if player.invincible==0: player.shield_active=False
+            player.ghost_active=(self.ghost_active_t>0)
+            player.rage_active=(self.rage_active_t>0)
+            # rage mode: auto-fire when lives critically low
+            if (self.skill_tree.has("rage_mode") and self.lives<=2
+                    and self.rage_active_t==0 and self.rage_cooldown_t==0):
+                self.rage_active_t=1200    # 20 s
+                self.rage_cooldown_t=1200
+                play(SND_BOOST)
+                self.flash((255,80,40),140)
+                self.popup(player.rect.centerx,player.rect.centery-48,
+                           "RAGE MODE! (+40% SPD)",(255,100,40))
+            # apply rage speed bonus
+            if self.rage_active_t>0:
+                speed_scale*=1.4
 
             # ── UPDATE ────────────────────────────────────────
             for p in self.platforms:
                 p.mspeed=getattr(p,"base_mspeed",p.mspeed)*speed_scale
                 p.update()
             for c in self.coins:
-                c.update(player.rect.centerx,player.rect.centery)
+                c.update(player.rect.centerx,player.rect.centery,
+                         magnet=(self.level_idx==99))
             player.update(self.platforms,dx,jump,dash,self.emotion_profile,self.skill_tree)
             for en in self.enemies:
                 en.speed=getattr(en,"base_speed",en.speed)*speed_scale
@@ -3600,15 +3918,35 @@ class Game:
             for c in self.coins:
                 if c.check(player.rect):
                     self.coins_got+=1; SD["coins"]+=1
+                    self.combo+=1; self.combo_timer=180
                     play(SND_COIN)
                     ps.burst(c.x,c.y,count=16,
                              color=hsv(self.tick*0.01%1,0.9,1.0),
                              size=5,world=self.level_idx)
                     self.popup(c.x,c.y-26,"+1 ◆",(255,220,80))
+                    if self.combo>=5:
+                        ps.burst(player.rect.centerx,player.rect.centery,
+                                 count=28,color=(255,200,0),size=7,world=self.level_idx)
 
-            # Deaths: fall off + deadly platforms
+            # Coin burst: auto-collect all remaining coins at combo ≥ 10
+            if (self.skill_tree.has("coin_burst") and self.combo>=10
+                    and any(not c.collected for c in self.coins)):
+                burst_count=0
+                for c in self.coins:
+                    if not c.collected:
+                        c.collected=True
+                        self.coins_got+=1; SD["coins"]+=1
+                        burst_count+=1
+                if burst_count:
+                    ps.burst(player.rect.centerx,player.rect.centery,
+                             count=burst_count*6,color=(255,230,80),size=7,world=self.level_idx)
+                    play(SND_COIN)
+                    self.popup(player.rect.centerx,player.rect.centery-48,
+                               f"COIN BURST! +{burst_count}",(255,220,60))
+
+            # Deaths: fall off + deadly platforms (ghost step bypasses deadly platforms)
             if player.rect.top>H: self.die()
-            if player.check_deadly(self.platforms): self.die()
+            if self.ghost_active_t==0 and player.check_deadly(self.platforms): self.die()
 
             # Enemy collisions
             for en in self.enemies:
@@ -3676,6 +4014,18 @@ class Game:
             player.draw(screen)
             ps.draw(screen)
 
+            # Ultimate shockwave rings
+            next_waves=[]
+            for w in self.ultimate_waves:
+                w["r"]+=14; w["alpha"]=max(0,w["alpha"]-9)
+                if w["alpha"]>0:
+                    ws=pygame.Surface((W,H),pygame.SRCALPHA)
+                    pygame.draw.circle(ws,(*w["color"],int(w["alpha"])),
+                                       (int(w["ox"]),int(w["oy"])),int(w["r"]),4)
+                    screen.blit(ws,(0,0))
+                    next_waves.append(w)
+            self.ultimate_waves=next_waves
+
             # Off-screen enemy arrows
             draw_edge_indicators(screen,self.enemies,self.tick)
 
@@ -3690,11 +4040,31 @@ class Game:
                 fl.fill((*self.flash_color,int(self.flash_alpha)))
                 screen.blit(fl,(0,0)); self.flash_alpha=max(0,self.flash_alpha-15)
 
+            # Rage Mode: pulsing red vignette at screen edges
+            if self.rage_active_t>0:
+                rage_pulse=int(20+14*((math.sin(self.tick*0.22)+1)/2))
+                rv=pygame.Surface((W,H),pygame.SRCALPHA)
+                for vi in range(24,0,-4):
+                    aa=max(0,rage_pulse-vi*2)
+                    pygame.draw.rect(rv,(220,40,10,aa),(vi,vi,W-vi*2,H-vi*2),vi)
+                screen.blit(rv,(0,0))
+
+            # Ghost Step: purple vignette
+            if self.ghost_active_t>0:
+                gv=pygame.Surface((W,H),pygame.SRCALPHA)
+                for vi in range(20,0,-4):
+                    aa=max(0,14-vi)
+                    pygame.draw.rect(gv,(120,80,220,aa),(vi,vi,W-vi*2,H-vi*2),vi)
+                screen.blit(gv,(0,0))
+
             # HUD
             elapsed=_time.time()-self.level_start_time
             draw_hud(screen,self.level_idx,self.lives,self.tick,
                      len(self.coins),self.coins_got,self.combo,
-                     player.dash_t,elapsed)
+                     player.dash_t,elapsed,
+                     self.shield_cooldown_t,self.skill_tree.has("shield"),
+                     self.ghost_cooldown_t,self.ghost_active_t,self.skill_tree.has("ghost_step"),
+                     self.rage_cooldown_t,self.rage_active_t,self.skill_tree.has("rage_mode"))
             joy.draw(screen)
 
             # World intro card (drawn last, on top)

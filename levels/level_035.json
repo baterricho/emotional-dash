@@ -12,7 +12,7 @@
   "platform_style": "scorched",
   "hazards": [],
   "special_mechanic": "enemy_timing",
-  "difficulty": "normal",
+  "difficulty": "hard",
   "decorations": [
     "mushroom_galaxy_silhouette",
     "determination_motes"

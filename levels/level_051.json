@@ -12,7 +12,7 @@
   "platform_style": "ice",
   "hazards": [],
   "special_mechanic": "precision_jumps",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "skyline_reef_silhouette",
     "courage_motes"

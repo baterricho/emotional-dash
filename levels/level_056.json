@@ -12,7 +12,7 @@
   "platform_style": "glitch",
   "hazards": [],
   "special_mechanic": "memory_replay",
-  "difficulty": "hard",
+  "difficulty": "hard+",
   "decorations": [
     "silver_hive_silhouette",
     "growth_motes"

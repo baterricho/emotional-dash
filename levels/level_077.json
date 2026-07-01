@@ -12,7 +12,7 @@
   "platform_style": "crystal",
   "hazards": [],
   "special_mechanic": "enemy_timing",
-  "difficulty": "expert",
+  "difficulty": "expert-",
   "decorations": [
     "cobalt_circus_silhouette",
     "persistence_motes"

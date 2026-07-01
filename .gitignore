@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# PyInstaller
+*.spec.bak
+*.pkg
+*.toc
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# User save & settings data (generated at runtime, not shipped)
+savegame.json
+settings.json
+ea_v*.json
+ea_transcendent.json
+ea_ultimate_save.json
+save_data.json
+
+# Build output archives
+EmotionArchitect-*.zip
+EmotionArchitect-Windows.zip
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
