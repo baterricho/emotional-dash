@@ -1,27 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
-import sys
-from pathlib import Path
 
-ROOT = Path(SPECPATH)
 
 a = Analysis(
     ['run.py'],
-    pathex=[str(ROOT)],
+    pathex=[],
     binaries=[],
-    datas=[
-        (str(ROOT / 'levels'),  'levels'),
-        (str(ROOT / 'assets'),  'assets'),
-        (str(ROOT / 'src'),     'src'),
-    ],
-    hiddenimports=[
-        'numpy',
-        'src.emotion.emotion_profiles',
-        'src.skills.skill_tree',
-        'src.levels.level_manager',
-        'src.world.world_events',
-        'src.settings.settings_manager',
-        'src.story.emotion_system',
-    ],
+    datas=[('levels', 'levels'), ('assets', 'assets'), ('src', 'src')],
+    hiddenimports=['numpy', 'src.emotion.emotion_profiles', 'src.skills.skill_tree', 'src.levels.level_manager', 'src.world.world_events', 'src.settings.settings_manager', 'src.story.emotion_system'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -30,8 +15,6 @@ a = Analysis(
     optimize=0,
 )
 pyz = PYZ(a.pure)
-
-icon_path = str(ROOT / 'assets' / 'icon.ico')
 
 exe = EXE(
     pyz,
@@ -52,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=icon_path,
+    icon=['C:\\Users\\RICHO BATERZAL\\Desktop\\EMOTIONAL DASH\\emotional-dash\\assets\\icon.ico'],
 )
